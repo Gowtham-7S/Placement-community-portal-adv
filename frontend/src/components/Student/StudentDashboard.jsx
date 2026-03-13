@@ -67,14 +67,14 @@ const StudentDashboard = () => {
                 onClick={() => setActiveTab(id)}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group relative
                   ${isActive
-                    ? 'bg-slate-700/80 text-white'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-violet-600/20 text-violet-200'
+                    : 'text-slate-400 hover:text-violet-200 hover:bg-violet-900/20'
                   }`}
               >
                 {isActive && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-400 rounded-r-full" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-500 rounded-r-full" />
                 )}
-                <span className={`${isActive ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`}>
+                <span className={`${isActive ? 'text-violet-400' : 'text-slate-500 group-hover:text-violet-300'} transition-colors`}>
                   {icon}
                 </span>
                 {label}

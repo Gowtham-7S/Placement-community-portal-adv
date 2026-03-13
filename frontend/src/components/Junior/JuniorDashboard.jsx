@@ -59,7 +59,7 @@ const JuniorDashboard = () => {
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         <div className="px-5 py-4 flex items-center gap-3 border-b border-slate-800">
-          <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
+          <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
             JR
           </div>
           <div>
@@ -84,14 +84,14 @@ const JuniorDashboard = () => {
                 onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group relative
                   ${isActive
-                    ? 'bg-slate-700/90 text-white shadow-sm'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
+                    ? 'bg-violet-600/20 text-violet-200 shadow-sm'
+                    : 'text-slate-300 hover:text-violet-200 hover:bg-violet-900/20'
                   }`}
               >
                 {isActive && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-emerald-400 rounded-r-full" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-500 rounded-r-full" />
                 )}
-                <span className={`${isActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`}>
+                <span className={`${isActive ? 'text-violet-400' : 'text-slate-500 group-hover:text-violet-300'} transition-colors`}>
                   {icon}
                 </span>
                 {label}
@@ -137,7 +137,7 @@ const JuniorDashboard = () => {
                 <p className="text-sm font-semibold text-gray-800 leading-tight">{user?.name || 'Junior'}</p>
                 <p className="text-[11px] text-gray-400 capitalize">{user?.role || 'junior'}</p>
               </div>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-xs font-bold text-white shadow">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow">
                 {initials}
               </div>
             </div>

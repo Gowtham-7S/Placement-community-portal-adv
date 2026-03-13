@@ -5,6 +5,8 @@ const Question = require('../models/Question');
 const ExperienceAccessService = require('./ExperienceAccessService');
 const { AppError } = require('../middlewares/errorHandler');
 const constants = require('../config/constants');
+const EmailService = require('./EmailService');
+const User = require('../models/User');
 
 /**
  * Experience Service
@@ -259,7 +261,23 @@ class ExperienceService {
         );
       }
 
-      return await Experience.updateApprovalStatus(experienceId, 'accepted', approvedBy, comment);
+      const updated = await Experience.updateApprovalStatus(experienceId, 'accepted', approvedBy, comment);
+
+      // Notify student via email — fire-and-forget, errors never break the API
+      User.findById(experience.user_id).then((user) => {
+        if (user?.email) {
+          EmailService.sendApprovalNotification({
+            to: user.email,
+            studentName: [user.first_name, user.last_name].filter(Boolean).join(' '),
+            companyName: experience.company_name,
+            comment,
+          }).catch((err) =>
+            console.error(`[ExperienceService] Approval email failed for user ${experience.user_id}:`, err.message)
+          );
+        }
+      }).catch(() => {});
+
+      return updated;
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw new Error(`Approve submission error: ${error.message}`);
@@ -288,7 +306,23 @@ class ExperienceService {
         );
       }
 
-      return await Experience.updateApprovalStatus(experienceId, 'rejected', approvedBy, reason);
+      const updated = await Experience.updateApprovalStatus(experienceId, 'rejected', approvedBy, reason);
+
+      // Notify student via email — fire-and-forget, errors never break the API
+      User.findById(experience.user_id).then((user) => {
+        if (user?.email) {
+          EmailService.sendRejectionNotification({
+            to: user.email,
+            studentName: [user.first_name, user.last_name].filter(Boolean).join(' '),
+            companyName: experience.company_name,
+            reason,
+          }).catch((err) =>
+            console.error(`[ExperienceService] Rejection email failed for user ${experience.user_id}:`, err.message)
+          );
+        }
+      }).catch(() => {});
+
+      return updated;
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw new Error(`Reject submission error: ${error.message}`);

@@ -100,7 +100,7 @@ class ExperienceAccess {
            company_name = COALESCE(EXCLUDED.company_name, experience_access_students.company_name),
            is_active = TRUE,
            updated_at = NOW()
-         RETURNING id, roll_number, email, student_name, company_name, is_active, created_at`,
+         RETURNING id, roll_number, email, student_name, company_name, is_active, created_at, updated_at`,
         [email, rollNumber || null, studentName || null, companyName || null, createdBy]
       );
     } else {
@@ -113,7 +113,7 @@ class ExperienceAccess {
            company_name = COALESCE(EXCLUDED.company_name, experience_access_students.company_name),
            is_active = TRUE,
            updated_at = NOW()
-         RETURNING id, roll_number, email, student_name, company_name, is_active, created_at`,
+         RETURNING id, roll_number, email, student_name, company_name, is_active, created_at, updated_at`,
         [rollNumber, studentName || null, companyName || null, createdBy]
       );
     }

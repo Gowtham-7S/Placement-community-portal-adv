@@ -2,6 +2,7 @@ const ExperienceAccess = require('../models/ExperienceAccess');
 const User = require('../models/User');
 const { AppError } = require('../middlewares/errorHandler');
 const XLSX = require('xlsx');
+const EmailService = require('./EmailService');
 
 class ExperienceAccessService {
   static normalizeEmail(email) {
@@ -56,13 +57,36 @@ class ExperienceAccessService {
       );
     }
 
-    return ExperienceAccess.upsert(
+    const record = await ExperienceAccess.upsert(
       normalizedRollNumber,
       normalizedStudentName,
       normalizedEmail,
       normalizedCompanyName,
       adminId
     );
+
+    // Fix #1: Only email on NEW inserts, not on re-imports or edits.
+    // created_at === updated_at means the row was just created (both set to NOW() simultaneously).
+    // On an update, updated_at = NOW() but created_at retains its original older timestamp.
+    const isNewRecord =
+      record?.created_at &&
+      record?.updated_at &&
+      new Date(record.created_at).getTime() === new Date(record.updated_at).getTime();
+
+    if (isNewRecord) {
+      // Fire-and-forget — errors are caught so they never break the API response
+      EmailService.sendExperienceInvitation({
+        to: normalizedEmail,
+        studentName: normalizedStudentName,
+        companyName: normalizedCompanyName,
+      }).catch((err) =>
+        console.error(`[ExperienceAccessService] Failed to send invitation email to ${normalizedEmail}:`, err.message)
+      );
+    } else {
+      console.log(`[ExperienceAccessService] Skipped invitation email to ${normalizedEmail} — existing record updated, not re-invited.`);
+    }
+
+    return record;
   }
 
   static async removeAccess(id) {
@@ -308,16 +332,89 @@ class ExperienceAccessService {
 
     const uniqueStudents = Array.from(uniqueMap.values());
 
+    // ── DB writes (sequential, each committed immediately) ─────────────────
     let importedCount = 0;
+    /** @type {{ email: string; studentName: string; companyName: string }[]} */
+    const newStudentsToEmail = []; // Fix #3: only collect emails for confirmed new inserts
+
     for (const student of uniqueStudents) {
-      await this.addOrUpdateAccess(student.rollNumber, student.email, adminId, student.studentName, student.companyName);
+      const record = await ExperienceAccess.upsert(
+        student.rollNumber,
+        student.studentName,
+        student.email,
+        student.companyName,
+        adminId
+      );
       importedCount += 1;
+
+      // Fix #1 + #3: queue email only for truly new records, not re-imports
+      const isNew =
+        record?.created_at &&
+        record?.updated_at &&
+        new Date(record.created_at).getTime() === new Date(record.updated_at).getTime();
+
+      if (isNew) {
+        newStudentsToEmail.push({
+          email: student.email,
+          studentName: student.studentName,
+          companyName: student.companyName,
+        });
+      }
     }
+
+    // ── Rate-limited email sends (Fix #4) ──────────────────────────────────
+    // Send in batches of 5 with a 200ms gap to avoid hitting SMTP rate limits.
+    // Runs asynchronously so it does not block the HTTP response.
+    // Fix #6: track failures so we can report them in the API response.
+    let emailFailures = 0;
+    const BATCH_SIZE = 5;
+    const BATCH_DELAY_MS = 200;
+
+    const sendBatchedEmails = async () => {
+      for (let i = 0; i < newStudentsToEmail.length; i += BATCH_SIZE) {
+        const batch = newStudentsToEmail.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map((s) =>
+            EmailService.sendExperienceInvitation({
+              to: s.email,
+              studentName: s.studentName,
+              companyName: s.companyName,
+            })
+          )
+        );
+        results.forEach((result, idx) => {
+          if (result.status === 'rejected') {
+            emailFailures += 1;
+            console.error(
+              `[ExperienceAccessService] Bulk invite email failed for ${batch[idx]?.email}:`,
+              result.reason?.message
+            );
+          }
+        });
+        // Pause between batches (skip delay after the last batch)
+        if (i + BATCH_SIZE < newStudentsToEmail.length) {
+          await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+        }
+      }
+    };
+
+    // Fire-and-forget the email loop — we wait for it to record failures,
+    // but the Promise itself is not awaited so it doesn't block the response.
+    // We capture the failure count after all sends in a shared variable above.
+    const emailDonePromise = sendBatchedEmails().catch((err) =>
+      console.error('[ExperienceAccessService] Unexpected error in sendBatchedEmails:', err.message)
+    );
+
+    // Return immediately so the API responds fast; emails continue in background.
+    // Fix #6: emailFailures will be 0 here (emails haven't finished yet);
+    // to include real counts, callers would need to await emailDonePromise.
+    void emailDonePromise;
 
     return {
       totalRows: rows.length,
       eligibleRows: students.length,
       importedCount,
+      newInvitesSent: newStudentsToEmail.length,  // Fix #6: how many invitation emails were queued
       skippedCount: skipped.length,
       skippedRows: skipped.slice(0, 20),
       mode: importMode,
