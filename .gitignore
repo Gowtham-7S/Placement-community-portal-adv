@@ -1,0 +1,219 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.example
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.classpath
+.c9/
+*.sublime-project
+*.sublime-workspace
+.vscode-test/
+
+# Build & Dist
+build/
+dist/
+.next/
+out/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Coverage
+coverage/
+.coverage
+.nyc_output/
+
+# Testing
+jest/
+mocha/
+
+# Cache
+.cache/
+.eslintcache
+.prettier-ignore
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Uploads
+uploads/
+public/uploads/
+
+# Database
+*.sqlite
+*.sqlite3
+.env.*.db
+
+# Keys & Secrets
+keys/
+private.key
+public.key
+secrets/
+*.pem
+
+# Package Manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Backup Files
+*.bak
+*.backup
+*.old
+
+# Compiled Files
+*.class
+*.jar
+*.o
+*.so
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Node
+node_modules/
+
+# React
+build/
+.react/
+
+# Next.js
+.next/
+out/
+
+# Storybook
+storybook-static/
+
+# Miscellaneous
+.directory
+.bundle
+.byebug_history
+.bundle/config
+.rubygems/
+.yarn
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Project Specific
+# Don't commit sensitive data
+admin_notes.txt
+test_credentials.txt
+local_config.js
+
+# IDE Specific
+.vscode/extensions.json
+.vscode/settings.json
+.vscode/launch.json
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Optional eslint cache
+.eslintcache
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variable files
+.env.development.local
+.env.test.local
+.env.production.local
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+
+# Generated Files
+dist/
+build/
+.output/
+.nuxt
+.cache/
+.vuepress/dist
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+
+# Misc
+.cache
+.parcel-cache
+.eslintcache
+.node_repl_history
+*.tsbuildinfo
+.yarn-integrity
+.env.*.local
+
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Keep These
+!.github/
+!.gitkeep
