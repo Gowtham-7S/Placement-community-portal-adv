@@ -2,6 +2,7 @@ const ExperienceAccess = require('../models/ExperienceAccess');
 const User = require('../models/User');
 const { AppError } = require('../middlewares/errorHandler');
 const XLSX = require('xlsx');
+const EmailService = require('./EmailService');
 
 class ExperienceAccessService {
   static normalizeEmail(email) {
@@ -56,13 +57,33 @@ class ExperienceAccessService {
       );
     }
 
-    return ExperienceAccess.upsert(
+    const record = await ExperienceAccess.upsert(
       normalizedRollNumber,
       normalizedStudentName,
       normalizedEmail,
       normalizedCompanyName,
       adminId
     );
+
+    // Only email on NEW inserts, not on re-imports or edits.
+    const isNewRecord =
+      record?.created_at &&
+      record?.updated_at &&
+      new Date(record.created_at).getTime() === new Date(record.updated_at).getTime();
+
+    if (isNewRecord) {
+      EmailService.sendExperienceInvitation({
+        to: normalizedEmail,
+        studentName: normalizedStudentName,
+        companyName: normalizedCompanyName,
+      }).catch((err) =>
+        console.error(`[ExperienceAccessService] Failed to send invitation email to ${normalizedEmail}:`, err.message)
+      );
+    } else {
+      console.log(`[ExperienceAccessService] Skipped invitation email to ${normalizedEmail} — existing record updated, not re-invited.`);
+    }
+
+    return record;
   }
 
   static async removeAccess(id) {
@@ -309,15 +330,69 @@ class ExperienceAccessService {
     const uniqueStudents = Array.from(uniqueMap.values());
 
     let importedCount = 0;
+    const newStudentsToEmail = [];
+
     for (const student of uniqueStudents) {
-      await this.addOrUpdateAccess(student.rollNumber, student.email, adminId, student.studentName, student.companyName);
+      const record = await this.addOrUpdateAccess(student.rollNumber, student.email, adminId, student.studentName, student.companyName);
       importedCount += 1;
+
+      const isNew =
+        record?.created_at &&
+        record?.updated_at &&
+        new Date(record.created_at).getTime() === new Date(record.updated_at).getTime();
+
+      if (isNew) {
+        newStudentsToEmail.push({
+          email: student.email,
+          studentName: student.studentName,
+          companyName: student.companyName,
+        });
+      }
     }
+
+    // Rate-limited email sends
+    let emailFailures = 0;
+    const BATCH_SIZE = 5;
+    const BATCH_DELAY_MS = 200;
+
+    const sendBatchedEmails = async () => {
+      for (let i = 0; i < newStudentsToEmail.length; i += BATCH_SIZE) {
+        const batch = newStudentsToEmail.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map((s) =>
+            EmailService.sendExperienceInvitation({
+              to: s.email,
+              studentName: s.studentName,
+              companyName: s.companyName,
+            })
+          )
+        );
+        results.forEach((result, idx) => {
+          if (result.status === 'rejected') {
+            emailFailures += 1;
+            console.error(
+              `[ExperienceAccessService] Bulk invite email failed for ${batch[idx]?.email}:`,
+              result.reason?.message
+            );
+          }
+        });
+        if (i + BATCH_SIZE < newStudentsToEmail.length) {
+          await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+        }
+      }
+    };
+
+    const emailDonePromise = sendBatchedEmails().catch((err) =>
+      console.error('[ExperienceAccessService] Unexpected error in sendBatchedEmails:', err.message)
+    );
+
+    void emailDonePromise;
 
     return {
       totalRows: rows.length,
       eligibleRows: students.length,
       importedCount,
+      newInvitesSent: newStudentsToEmail.length,
       skippedCount: skipped.length,
       skippedRows: skipped.slice(0, 20),
       mode: importMode,
