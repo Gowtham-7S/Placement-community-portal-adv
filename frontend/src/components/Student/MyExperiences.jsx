@@ -9,11 +9,11 @@ import {
 
 const StatusBadge = ({ status }) => {
   const map = {
-    pending: { label: 'Under Review', cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-    accepted: { label: 'Approved', cls: 'bg-green-100 text-green-700 border-green-200' },
+    pending: { label: 'Under Review', cls: 'bg-[#f3f0ff] text-[#5b47d6] border-[#e3ddff]' },
+    accepted: { label: 'Approved', cls: 'bg-[#eef2ff] text-[#4338ca] border-[#d7d2ff]' },
     rejected: { label: 'Rejected', cls: 'bg-red-100 text-red-700 border-red-200' },
   };
-  const { label, cls } = map[status] || { label: status, cls: 'bg-gray-100 text-gray-600 border-gray-200' };
+  const { label, cls } = map[status] || { label: status, cls: 'bg-slate-100 text-slate-600 border-slate-200' };
   return (
     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${cls} capitalize`}>
       {label}
@@ -23,14 +23,14 @@ const StatusBadge = ({ status }) => {
 
 const ResultBadge = ({ result }) => {
   const map = {
-    pass: 'bg-green-50 text-green-700',
+    pass: 'bg-[#eef2ff] text-[#4338ca]',
     fail: 'bg-red-50 text-red-700',
-    not_sure: 'bg-yellow-50 text-yellow-700',
-    waitlisted: 'bg-yellow-50 text-yellow-700',
-    withdrew: 'bg-gray-50 text-gray-600',
+    not_sure: 'bg-[#f3f0ff] text-[#5b47d6]',
+    waitlisted: 'bg-[#f3f0ff] text-[#5b47d6]',
+    withdrew: 'bg-slate-50 text-slate-600',
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${map[result] || 'bg-gray-50 text-gray-600'}`}>
+    <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${map[result] || 'bg-slate-50 text-slate-600'}`}>
       {result?.replace('_', ' ')}
     </span>
   );
@@ -92,7 +92,7 @@ const MyExperiences = ({ onSubmitClick }) => {
 
   if (loading) return (
     <div className="flex justify-center items-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6d5dfc]"></div>
     </div>
   );
 
@@ -113,13 +113,13 @@ const MyExperiences = ({ onSubmitClick }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">My Experiences</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{experiences.length} submission(s)</p>
+          <h2 className="text-xl font-bold text-slate-900">My Experiences</h2>
+          <p className="text-sm text-slate-500 mt-0.5">{experiences.length} submission(s)</p>
         </div>
         {onSubmitClick && (
           <button
             onClick={onSubmitClick}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+            className="bg-[#6d5dfc] hover:bg-[#5b47d6] text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
           >
             <AddIcon fontSize="small" />
             Submit New
@@ -134,7 +134,7 @@ const MyExperiences = ({ onSubmitClick }) => {
             <div
               key={exp.id}
               onClick={() => setSelectedId(exp.id)}
-              className="w-full text-left bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-indigo-200 transition-all group cursor-pointer"
+              className="w-full text-left bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-[#d7d2ff] transition-all group cursor-pointer"
               role="button"
               tabIndex={0}
               onKeyDown={(e) => { if (e.key === 'Enter') setSelectedId(exp.id); }}
@@ -142,21 +142,21 @@ const MyExperiences = ({ onSubmitClick }) => {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="flex items-start gap-4">
                   {/* Avatar */}
-                  <div className="w-11 h-11 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold flex-shrink-0 group-hover:bg-indigo-100 transition-colors">
+                  <div className="w-11 h-11 rounded-lg bg-[#f3f0ff] text-[#6d5dfc] flex items-center justify-center text-lg font-bold flex-shrink-0 group-hover:bg-[#ede9fe] transition-colors">
                     {(exp.company_name || '?')[0].toUpperCase()}
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-gray-900 group-hover:text-indigo-700 transition-colors">
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-[#5b47d6] transition-colors">
                       {exp.company_name}
                     </h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5 flex-wrap">
                       <span className="flex items-center gap-1">
-                        <WorkIcon fontSize="inherit" className="text-gray-400" />
+                        <WorkIcon fontSize="inherit" className="text-slate-400" />
                         {exp.role_applied}
                       </span>
-                      <span className="text-gray-300">|</span>
+                      <span className="text-slate-300">|</span>
                       <span className="flex items-center gap-1">
-                        <CalendarIcon fontSize="inherit" className="text-gray-400" />
+                        <CalendarIcon fontSize="inherit" className="text-slate-400" />
                         {exp.submitted_at ? new Date(exp.submitted_at).toLocaleDateString() : 'N/A'}
                       </span>
                     </div>
@@ -175,21 +175,21 @@ const MyExperiences = ({ onSubmitClick }) => {
                     <DeleteIcon fontSize="small" />
                     {deletingId === exp.id ? 'Deleting...' : 'Delete'}
                   </button>
-                  <ChevronIcon fontSize="small" className="text-gray-300 group-hover:text-indigo-500 transition-colors ml-1" />
+                  <ChevronIcon fontSize="small" className="text-slate-300 group-hover:text-[#6d5dfc] transition-colors ml-1" />
                 </div>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-200">
+        <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-200">
           <div className="text-5xl mb-4">📄</div>
-          <h3 className="text-lg font-medium text-gray-900">No experiences yet</h3>
-          <p className="text-gray-500 mt-1 text-sm">Share your interview experience to help juniors prepare.</p>
+          <h3 className="text-lg font-medium text-slate-900">No experiences yet</h3>
+          <p className="text-slate-500 mt-1 text-sm">Share your interview experience to help juniors prepare.</p>
           {onSubmitClick && (
             <button
               onClick={onSubmitClick}
-              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors inline-flex items-center gap-2"
+              className="mt-4 px-4 py-2 bg-[#6d5dfc] text-white rounded-lg text-sm hover:bg-[#5b47d6] transition-colors inline-flex items-center gap-2"
             >
               <AddIcon fontSize="small" />
               Submit Your First Experience
@@ -202,3 +202,4 @@ const MyExperiences = ({ onSubmitClick }) => {
 };
 
 export default MyExperiences;
+

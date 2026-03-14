@@ -134,17 +134,17 @@ const AdminExperienceAccess = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <h2 className="text-xl font-bold text-gray-900">Experience Access Control</h2>
-        <p className="text-sm text-gray-500 mt-1">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <h2 className="text-xl font-bold text-slate-900">Experience Access Control</h2>
+        <p className="text-sm text-slate-500 mt-1">
           Only listed students can submit interview experiences.
         </p>
       </div>
 
-      <form onSubmit={onSubmit} noValidate className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <form onSubmit={onSubmit} noValidate className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <div className="flex items-center gap-2 mb-4">
-          <PersonAddAltIcon fontSize="small" className="text-primary" />
-          <h3 className="text-base font-semibold text-gray-800">Add Student Access</h3>
+          <PersonAddAltIcon fontSize="small" className="text-[#6d5dfc]" />
+          <h3 className="text-base font-semibold text-slate-800">Add Student Access</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -156,7 +156,7 @@ const AdminExperienceAccess = () => {
               setForm((prev) => ({ ...prev, email: next }));
             }}
             placeholder="Email (e.g. user@bitsathy.ac.in)"
-            className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-[#6d5dfc]"
             required
           />
           <input
@@ -164,7 +164,7 @@ const AdminExperienceAccess = () => {
             value={form.roll_number}
             onChange={(e) => setForm((prev) => ({ ...prev, roll_number: e.target.value }))}
             placeholder="Roll Number"
-            className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-[#6d5dfc]"
             required
           />
           <input
@@ -172,19 +172,19 @@ const AdminExperienceAccess = () => {
             value={form.student_name}
             onChange={(e) => setForm((prev) => ({ ...prev, student_name: e.target.value }))}
             placeholder="Student Name"
-            className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-[#6d5dfc]"
           />
           <input
             type="text"
             value={form.company_name}
             onChange={(e) => setForm((prev) => ({ ...prev, company_name: e.target.value }))}
             placeholder="Company Name"
-            className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-[#6d5dfc]"
           />
           <button
             type="submit"
             disabled={submitting}
-            className={`px-4 py-2 rounded-lg text-white font-medium md:col-span-4 ${submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-indigo-700'}`}
+            className={`px-4 py-2 rounded-lg text-white font-medium md:col-span-4 ${submitting ? 'bg-slate-300 cursor-not-allowed' : 'bg-[#6d5dfc] hover:bg-[#5b47d6]'}`}
           >
             {submitting ? 'Saving...' : 'Save Access'}
           </button>
@@ -194,13 +194,13 @@ const AdminExperienceAccess = () => {
         {success && <p className="text-sm text-green-600 mt-3">{success}</p>}
       </form>
 
-      <form onSubmit={onImportExcel} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <form onSubmit={onImportExcel} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <div className="flex items-center gap-2 mb-4">
-          <UploadFileIcon fontSize="small" className="text-primary" />
-          <h3 className="text-base font-semibold text-gray-800">Import From Excel</h3>
+          <UploadFileIcon fontSize="small" className="text-[#6d5dfc]" />
+          <h3 className="text-base font-semibold text-slate-800">Import From Excel</h3>
         </div>
 
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-slate-500 mb-4">
           Expected columns: Roll Number, Email (bitsathy.ac.in), Result, Rounds Attended, Total Rounds (or similar names).
         </p>
 
@@ -209,13 +209,13 @@ const AdminExperienceAccess = () => {
             type="file"
             accept=".xlsx,.xls"
             onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
           />
 
           <select
             value={importMode}
             onChange={(e) => setImportMode(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-primary"
+            className="px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-[#6d5dfc]"
           >
             <option value="selected_last_round">Selected + Last Round (Recommended)</option>
             <option value="selected_only">Selected/Placed Only</option>
@@ -224,7 +224,7 @@ const AdminExperienceAccess = () => {
           <button
             type="submit"
             disabled={importing}
-            className={`px-4 py-2 rounded-lg text-white font-medium ${importing ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-800 hover:bg-gray-900'}`}
+            className={`px-4 py-2 rounded-lg text-white font-medium ${importing ? 'bg-slate-300 cursor-not-allowed' : 'bg-[#6d5dfc] hover:bg-[#5b47d6]'}`}
           >
             {importing ? 'Importing...' : 'Import Excel'}
           </button>
@@ -254,12 +254,12 @@ const AdminExperienceAccess = () => {
         )}
       </form>
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center gap-3">
-          <h3 className="text-base font-semibold text-gray-800">Allowed Students</h3>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center gap-3">
+          <h3 className="text-base font-semibold text-slate-800">Allowed Students</h3>
           <form onSubmit={handleSearch} className="md:ml-auto flex items-center gap-2">
-            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2">
-              <SearchIcon fontSize="small" className="text-gray-400" />
+            <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2">
+              <SearchIcon fontSize="small" className="text-slate-400" />
               <input
                 type="text"
                 value={search}
@@ -270,7 +270,7 @@ const AdminExperienceAccess = () => {
             </div>
             <button
               type="submit"
-              className="px-3 py-2 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-900"
+              className="px-3 py-2 text-sm bg-[#6d5dfc] text-white rounded-lg hover:bg-[#5b47d6]"
             >
               Search
             </button>
@@ -278,14 +278,14 @@ const AdminExperienceAccess = () => {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-sm text-gray-500">Loading...</div>
+          <div className="p-8 text-center text-sm text-slate-500">Loading...</div>
         ) : items.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">No students added yet.</div>
+          <div className="p-8 text-center text-sm text-slate-500">No students added yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                <tr className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Register Number</th>
                   <th className="px-4 py-3">Name</th>
@@ -294,14 +294,14 @@ const AdminExperienceAccess = () => {
                   <th className="px-4 py-3 text-center">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-200">
                 {items.map((item) => (
                   <tr key={item.id}>
-                    <td className="px-4 py-3 font-medium text-gray-900">{item.email || '-'}</td>
-                    <td className="px-4 py-3 text-gray-700">{item.roll_number || '-'}</td>
-                    <td className="px-4 py-3 text-gray-700">{item.student_name || '-'}</td>
-                    <td className="px-4 py-3 text-gray-700">{item.company_name || '-'}</td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 font-medium text-slate-900">{item.email || '-'}</td>
+                    <td className="px-4 py-3 text-slate-700">{item.roll_number || '-'}</td>
+                    <td className="px-4 py-3 text-slate-700">{item.student_name || '-'}</td>
+                    <td className="px-4 py-3 text-slate-700">{item.company_name || '-'}</td>
+                    <td className="px-4 py-3 text-slate-500">
                       {item.created_at ? new Date(item.created_at).toLocaleDateString('en-IN') : '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -325,3 +325,7 @@ const AdminExperienceAccess = () => {
 };
 
 export default AdminExperienceAccess;
+
+
+
+

@@ -43,17 +43,17 @@ const StudentDashboard = () => {
     : 'ST';
 
   return (
-    <div className="min-h-screen flex font-sans bg-slate-50">
+    <div className="min-h-screen flex font-sans bg-[#eef2f8]">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-20 shadow-2xl">
+      <aside className="w-64 bg-white text-slate-700 flex flex-col fixed h-full z-20 shadow-2xl">
         {/* Logo */}
-        <div className="px-6 py-5 flex items-center gap-3 border-b border-slate-800">
-          <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
+        <div className="px-6 py-5 flex items-center gap-3 border-b border-slate-200">
+          <div className="w-9 h-9 bg-gradient-to-br from-[#6d5dfc] to-[#8a7dff] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
             🎓
           </div>
           <div>
-            <span className="text-lg font-bold tracking-tight text-white">PlaceIQ</span>
-            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-medium">Student Portal</p>
+            <span className="text-lg font-bold tracking-tight text-slate-900">PlaceIQ</span>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">Student Portal</p>
           </div>
         </div>
 
@@ -67,14 +67,14 @@ const StudentDashboard = () => {
                 onClick={() => setActiveTab(id)}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group relative
                   ${isActive
-                    ? 'bg-slate-700/80 text-white'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-[#ede9fe] text-[#4f46e5]'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
                   }`}
               >
                 {isActive && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-violet-400 rounded-r-full" />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#6d5dfc] rounded-r-full" />
                 )}
-                <span className={`${isActive ? 'text-violet-400' : 'text-slate-500 group-hover:text-slate-300'} transition-colors`}>
+                <span className={`${isActive ? 'text-[#6d5dfc]' : 'text-slate-500 group-hover:text-slate-600'} transition-colors`}>
                   {icon}
                 </span>
                 {label}
@@ -84,10 +84,10 @@ const StudentDashboard = () => {
         </nav>
 
         {/* Sidebar Footer — Logout only */}
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-200">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2.5 text-slate-400 hover:text-red-400 hover:bg-red-950/30 rounded-lg text-sm font-medium transition-all duration-150"
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-sm font-medium transition-all duration-150"
           >
             <LogoutIcon fontSize="small" />
             Sign Out
@@ -98,25 +98,25 @@ const StudentDashboard = () => {
       {/* Main Content Area */}
       <div className="flex-1 ml-64 flex flex-col min-h-screen">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200 px-8 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 leading-tight">
+            <h2 className="text-lg font-bold text-slate-900 leading-tight">
               {PAGE_TITLES[activeTab]}
             </h2>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate-400">
               {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="w-9 h-9 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
+            <button className="w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
               <NotificationsIcon fontSize="small" />
             </button>
-            <div className="flex items-center gap-2.5 pl-3 border-l border-gray-200">
+            <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-800 leading-tight">{user?.name || 'Student'}</p>
-                <p className="text-[11px] text-gray-400 capitalize">{user?.role || 'student'}</p>
+                <p className="text-sm font-semibold text-slate-800 leading-tight">{user?.name || 'Student'}</p>
+                <p className="text-[11px] text-slate-400 capitalize">{user?.role || 'student'}</p>
               </div>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#6d5dfc] to-[#8a7dff] flex items-center justify-center text-xs font-bold text-white shadow">
                 {initials}
               </div>
             </div>

@@ -120,8 +120,8 @@ const CompanyManagement = () => {
 
   const getInitialColor = (letter = 'C') => {
     const colors = [
-      'bg-primary/20 text-primary',
-      'bg-emerald-100 text-emerald-700',
+      'bg-[#6d5dfc]/20 text-[#6d5dfc]',
+      'bg-[#ede9fe] text-[#5b47d6]',
       'bg-amber-100 text-amber-700',
       'bg-cyan-100 text-cyan-700',
       'bg-rose-100 text-rose-700',
@@ -132,7 +132,7 @@ const CompanyManagement = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6d5dfc]" />
       </div>
     );
   }
@@ -141,24 +141,24 @@ const CompanyManagement = () => {
     <div className="max-w-7xl mx-auto min-h-screen">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Companies</h1>
-          <p className="text-gray-500 mt-1">Add company name and full description.</p>
+          <h1 className="text-2xl font-bold text-slate-900">Companies</h1>
+          <p className="text-slate-500 mt-1">Add company name and full description.</p>
         </div>
         <button
           onClick={() => handleOpenModal()}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-full md:w-auto justify-center"
+          className="bg-[#6d5dfc] hover:bg-[#5b47d6] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-full md:w-auto justify-center"
         >
           <AddIcon fontSize="small" />
           Add Company
         </button>
       </div>
 
-      <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm mb-8 flex items-center gap-2">
-        <SearchIcon className="text-gray-400 ml-2" />
+      <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm mb-8 flex items-center gap-2">
+        <SearchIcon className="text-slate-400 ml-2" />
         <input
           type="text"
           placeholder="Search by company name or description..."
-          className="flex-1 py-2 outline-none text-gray-700 placeholder-gray-400"
+          className="flex-1 py-2 outline-none text-slate-700 placeholder-slate-400"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -170,7 +170,7 @@ const CompanyManagement = () => {
             type="button"
             key={company.id}
             onClick={() => handleCardClick(company)}
-            className="text-left bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all group relative"
+            className="text-left bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg transition-all group relative"
           >
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
@@ -179,17 +179,17 @@ const CompanyManagement = () => {
                 </div>
                 <button
                   onClick={(e) => handleMenuClick(e, company.id)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
                 >
                   <MoreVertIcon />
                 </button>
               </div>
 
-              <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+              <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#6d5dfc] transition-colors">
                 {company.name}
               </h3>
               <p
-                className="text-[1.05rem] text-gray-600 mt-2 line-clamp-4 whitespace-pre-wrap leading-8"
+                className="text-[1.05rem] text-slate-600 mt-2 line-clamp-4 whitespace-pre-wrap leading-8"
                 style={{ fontFamily: 'Inter, "Segoe UI", Roboto, Arial, sans-serif' }}
               >
                 {company.description || 'No description provided.'}
@@ -202,8 +202,8 @@ const CompanyManagement = () => {
       {filteredCompanies.length === 0 && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">??</div>
-          <h3 className="text-lg font-medium text-gray-900">No companies found</h3>
-          <p className="text-gray-500">Try adjusting your search terms</p>
+          <h3 className="text-lg font-medium text-slate-900">No companies found</h3>
+          <p className="text-slate-500">Try adjusting your search terms</p>
         </div>
       )}
 
@@ -223,7 +223,7 @@ const CompanyManagement = () => {
       </Menu>
 
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle className="font-bold border-b border-gray-100">{editingId ? 'Edit Company' : 'Add New Company'}</DialogTitle>
+        <DialogTitle className="font-bold border-b border-slate-200">{editingId ? 'Edit Company' : 'Add New Company'}</DialogTitle>
         <DialogContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
             <TextField
@@ -265,16 +265,16 @@ const CompanyManagement = () => {
             />
           </form>
         </DialogContent>
-        <DialogActions className="p-4 border-t border-gray-100">
-          <Button onClick={() => setModalOpen(false)} className="text-gray-500">Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" className="bg-indigo-600 hover:bg-indigo-700 shadow-none">
+        <DialogActions className="p-4 border-t border-slate-200">
+          <Button onClick={() => setModalOpen(false)} className="text-slate-500">Cancel</Button>
+          <Button onClick={handleSubmit} variant="contained" className="bg-[#6d5dfc] hover:bg-[#5b47d6] shadow-none">
             {editingId ? 'Update Company' : 'Add Company'}
           </Button>
         </DialogActions>
       </Dialog>
 
       <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle className="font-bold border-b border-gray-100">
+        <DialogTitle className="font-bold border-b border-slate-200">
           {selectedCompany?.name || 'Company Details'}
         </DialogTitle>
         <DialogContent className="pt-6">
@@ -288,8 +288,8 @@ const CompanyManagement = () => {
             </p>
           </div>
         </DialogContent>
-        <DialogActions className="p-4 border-t border-gray-100">
-          <Button onClick={() => setDetailsOpen(false)} variant="contained" className="bg-indigo-600 hover:bg-indigo-700 shadow-none">
+        <DialogActions className="p-4 border-t border-slate-200">
+          <Button onClick={() => setDetailsOpen(false)} variant="contained" className="bg-[#6d5dfc] hover:bg-[#5b47d6] shadow-none">
             Close
           </Button>
         </DialogActions>
@@ -299,3 +299,6 @@ const CompanyManagement = () => {
 };
 
 export default CompanyManagement;
+
+
+
