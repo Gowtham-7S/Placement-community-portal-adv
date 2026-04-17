@@ -3,10 +3,11 @@ const CompanyController = require('../controllers/CompanyController');
 const DriveController = require('../controllers/DriveController');
 const ExperienceController = require('../controllers/ExperienceController');
 const ExperienceAccessController = require('../controllers/ExperienceAccessController');
-const { validators, handleValidationErrors } = require('../middlewares/validationMiddleware');
+const { validators, handleValidationErrors, body } = require('../middlewares/validationMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
-const { excelUpload } = require('../middlewares/uploadMiddleware');
+const { excelImportUpload } = require('../middlewares/uploadMiddleware');
+const EmailController = require('../controllers/EmailController');
 
 const router = express.Router();
 
@@ -113,7 +114,7 @@ router.post('/experience-access', ExperienceAccessController.addOrUpdateAccess);
 // Import allowed students from Excel
 router.post(
   '/experience-access/import',
-  excelUpload.single('file'),
+  excelImportUpload,
   ExperienceAccessController.importFromExcel
 );
 
@@ -130,5 +131,18 @@ const AnalyticsController = require('../controllers/AnalyticsController');
 
 // Get dashboard analytics
 router.get('/analytics/dashboard', AnalyticsController.getDashboardStats);
+
+// ========== EMAIL UTILITIES ==========
+router.get('/email/status', EmailController.getSmtpStatus);
+router.post(
+  '/email/test',
+  [
+    body('to').isEmail().withMessage('Valid recipient email is required').normalizeEmail(),
+    body('studentName').optional().trim(),
+    body('companyName').optional().trim(),
+  ],
+  handleValidationErrors,
+  EmailController.sendTestEmail
+);
 
 module.exports = router;

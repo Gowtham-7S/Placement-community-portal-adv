@@ -48,9 +48,14 @@ class ExperienceAccessController {
 
   static async importFromExcel(req, res, next) {
     try {
-      const mode = req.body.mode || 'selected_last_round';
+      const mode = String(req.body?.mode || 'selected_last_round').trim();
+      const fileBuffer = req.file?.buffer;
+      if (!fileBuffer) {
+        throw new Error('Excel file is required');
+      }
+
       const result = await ExperienceAccessService.importFromExcelBuffer(
-        req.file?.buffer,
+        fileBuffer,
         req.user.id,
         mode
       );

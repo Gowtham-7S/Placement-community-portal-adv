@@ -169,9 +169,10 @@ const ExperienceDetail = ({ experienceId, onBack, onDeleted }) => {
             <span className="font-semibold">Admin Note: </span>{exp.admin_comments}
           </div>
         )}
-        {exp.approval_status === 'rejected' && exp.rejection_reason && (
+        {exp.approval_status === 'rejected' && (
           <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-            <span className="font-semibold">Rejection Reason: </span>{exp.rejection_reason}
+            <span className="font-semibold">Rejection Reason: </span>
+            {exp.rejection_reason ? exp.rejection_reason : 'Not provided by admin.'}
           </div>
         )}
       </div>

@@ -47,6 +47,13 @@ class CompanyService {
       // Check if company already exists
       const existing = await Company.findByName(companyData.name);
       if (existing) {
+        if (!existing.is_active) {
+          const reactivated = await Company.update(existing.id, {
+            ...companyData,
+            is_active: true,
+          });
+          return reactivated;
+        }
         throw new AppError(
           'Company already exists',
           constants.HTTP_CONFLICT,

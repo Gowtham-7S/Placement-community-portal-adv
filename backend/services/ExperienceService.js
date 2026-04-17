@@ -119,7 +119,11 @@ class ExperienceService {
           e.id, e.user_id, e.drive_id, e.company_name, e.role_applied, e.result, e.selected,
           e.offer_received, e.ctc_offered, e.is_anonymous, e.approval_status,
           e.interview_duration, e.overall_difficulty, e.overall_feedback, e.confidence_level,
-          e.admin_comments, e.rejection_reason,
+          e.admin_comments,
+          CASE
+            WHEN e.approval_status = 'rejected' THEN COALESCE(e.rejection_reason, e.admin_comments)
+            ELSE e.rejection_reason
+          END AS rejection_reason,
           e.submitted_at, e.approved_at, e.created_at,
           (
             SELECT json_agg(round_data ORDER BY (round_data->>'round_number')::int)
@@ -289,6 +293,14 @@ class ExperienceService {
    */
   static async rejectSubmission(experienceId, approvedBy, reason) {
     try {
+      if (!reason || !String(reason).trim()) {
+        throw new AppError(
+          'Rejection reason is required',
+          400,
+          'REJECTION_REASON_REQUIRED'
+        );
+      }
+
       const experience = await Experience.findById(experienceId);
       if (!experience) {
         throw new AppError(
@@ -359,6 +371,14 @@ class ExperienceService {
           constants.ERROR_FORBIDDEN,
           constants.HTTP_FORBIDDEN,
           'NOT_OWNER'
+        );
+      }
+
+      if (experience.approval_status !== 'pending') {
+        throw new AppError(
+          'Only pending submissions can be deleted',
+          constants.HTTP_FORBIDDEN,
+          'CANNOT_DELETE'
         );
       }
 

@@ -65,23 +65,14 @@ class ExperienceAccessService {
       adminId
     );
 
-    // Only email on NEW inserts, not on re-imports or edits.
-    const isNewRecord =
-      record?.created_at &&
-      record?.updated_at &&
-      new Date(record.created_at).getTime() === new Date(record.updated_at).getTime();
-
-    if (isNewRecord) {
-      EmailService.sendExperienceInvitation({
-        to: normalizedEmail,
-        studentName: normalizedStudentName,
-        companyName: normalizedCompanyName,
-      }).catch((err) =>
-        console.error(`[ExperienceAccessService] Failed to send invitation email to ${normalizedEmail}:`, err.message)
-      );
-    } else {
-      console.log(`[ExperienceAccessService] Skipped invitation email to ${normalizedEmail} — existing record updated, not re-invited.`);
-    }
+    // Always email when access is granted/updated.
+    EmailService.sendExperienceInvitation({
+      to: normalizedEmail,
+      studentName: normalizedStudentName,
+      companyName: normalizedCompanyName,
+    }).catch((err) =>
+      console.error(`[ExperienceAccessService] Failed to send invitation email to ${normalizedEmail}:`, err.message)
+    );
 
     return record;
   }
@@ -136,6 +127,7 @@ class ExperienceAccessService {
     return String(header || '')
       .trim()
       .toLowerCase()
+      .replace(/[()[\].]/g, ' ')
       .replace(/[_-]+/g, ' ')
       .replace(/\s+/g, ' ');
   }
@@ -152,6 +144,11 @@ class ExperienceAccessService {
   }
 
   static parseNumberOrNull(value) {
+    if (value === undefined || value === null) return null;
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Math.trunc(value);
+    }
+
     const raw = String(value || '').trim();
     if (!raw) return null;
     const match = raw.match(/\d+/);
@@ -187,6 +184,26 @@ class ExperienceAccessService {
     return false;
   }
 
+  static hasRoundContext(roundsAttendedText, totalRoundsText, stageText) {
+    return [
+      this.parseNumberOrNull(roundsAttendedText),
+      this.parseNumberOrNull(totalRoundsText),
+      String(stageText || '').trim(),
+    ].some((value) => value !== null && value !== '');
+  }
+
+  static isEligibleForImport({ mode, isSelected, isLastRound, hasRoundContext }) {
+    if (mode === 'selected_only') {
+      return isSelected;
+    }
+
+    if (isSelected && !hasRoundContext) {
+      return true;
+    }
+
+    return isSelected && isLastRound;
+  }
+
   static extractEligibleStudentsFromRows(rows, mode = 'selected_last_round') {
     const students = [];
     const skipped = [];
@@ -199,6 +216,9 @@ class ExperienceAccessService {
         'email',
         'email id',
         'email address',
+        'college email',
+        'student email',
+        'student email id',
         'mail',
         'mail id',
         'mail address',
@@ -211,10 +231,16 @@ class ExperienceAccessService {
       const rollNumber = this.pickValue(row, [
         'roll number',
         'roll no',
+        'roll',
         'register number',
         'register no',
+        'register',
+        'registration number',
+        'registration no',
         'reg no',
         'reg number',
+        'university number',
+        'university no',
       ]);
       const companyName = this.pickValue(row, [
         'company',
@@ -227,6 +253,9 @@ class ExperienceAccessService {
         'status',
         'outcome',
         'selection status',
+        'offer status',
+        'placement status',
+        'final status',
       ]);
       const roundsAttended = this.pickValue(row, [
         'rounds attended',
@@ -234,17 +263,27 @@ class ExperienceAccessService {
         'rounds attened',
         'attended rounds',
         'round count',
+        'no of rounds attended',
+        'number of rounds attended',
+        'round cleared',
       ]);
       const totalRounds = this.pickValue(row, [
         'total rounds',
         'number of rounds',
         'max rounds',
+        'no of rounds',
+        'rounds',
       ]);
       const stage = this.pickValue(row, [
+        'round',
+        'interview round',
+        'current round',
         'current stage',
         'last stage',
         'final stage',
+        'stage',
         'round name',
+        'last round reached',
       ]);
 
       if (!email || !rollNumber) {
@@ -260,18 +299,20 @@ class ExperienceAccessService {
 
       const isSelected = this.evaluateSelectedStatus(result);
       const isLastRound = this.evaluateLastRound(roundsAttended, totalRounds, stage);
-
-      let eligible = false;
-      if (mode === 'selected_only') {
-        eligible = isSelected;
-      } else {
-        eligible = isSelected && isLastRound;
-      }
+      const hasRoundContext = this.hasRoundContext(roundsAttended, totalRounds, stage);
+      const eligible = this.isEligibleForImport({
+        mode,
+        isSelected,
+        isLastRound,
+        hasRoundContext,
+      });
 
       if (!eligible) {
         skipped.push({
           row: rowNumber,
-          reason: "Did not match eligibility (needs selected/placed and last round in default mode)",
+          reason: mode === 'selected_only'
+            ? 'Did not match eligibility (needs selected/placed status)'
+            : 'Did not match eligibility (needs selected/placed status, and if round columns exist they must indicate last/final round)',
         });
         continue;
       }
@@ -305,7 +346,11 @@ class ExperienceAccessService {
     }
 
     const sheet = workbook.Sheets[firstSheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+      defval: '',
+      raw: false,
+      blankrows: false,
+    });
 
     if (!Array.isArray(rows) || rows.length === 0) {
       throw new AppError('Excel sheet is empty', 400, 'EMPTY_SHEET');
@@ -330,69 +375,16 @@ class ExperienceAccessService {
     const uniqueStudents = Array.from(uniqueMap.values());
 
     let importedCount = 0;
-    const newStudentsToEmail = [];
-
     for (const student of uniqueStudents) {
       const record = await this.addOrUpdateAccess(student.rollNumber, student.email, adminId, student.studentName, student.companyName);
       importedCount += 1;
-
-      const isNew =
-        record?.created_at &&
-        record?.updated_at &&
-        new Date(record.created_at).getTime() === new Date(record.updated_at).getTime();
-
-      if (isNew) {
-        newStudentsToEmail.push({
-          email: student.email,
-          studentName: student.studentName,
-          companyName: student.companyName,
-        });
-      }
     }
-
-    // Rate-limited email sends
-    let emailFailures = 0;
-    const BATCH_SIZE = 5;
-    const BATCH_DELAY_MS = 200;
-
-    const sendBatchedEmails = async () => {
-      for (let i = 0; i < newStudentsToEmail.length; i += BATCH_SIZE) {
-        const batch = newStudentsToEmail.slice(i, i + BATCH_SIZE);
-        const results = await Promise.allSettled(
-          batch.map((s) =>
-            EmailService.sendExperienceInvitation({
-              to: s.email,
-              studentName: s.studentName,
-              companyName: s.companyName,
-            })
-          )
-        );
-        results.forEach((result, idx) => {
-          if (result.status === 'rejected') {
-            emailFailures += 1;
-            console.error(
-              `[ExperienceAccessService] Bulk invite email failed for ${batch[idx]?.email}:`,
-              result.reason?.message
-            );
-          }
-        });
-        if (i + BATCH_SIZE < newStudentsToEmail.length) {
-          await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
-        }
-      }
-    };
-
-    const emailDonePromise = sendBatchedEmails().catch((err) =>
-      console.error('[ExperienceAccessService] Unexpected error in sendBatchedEmails:', err.message)
-    );
-
-    void emailDonePromise;
 
     return {
       totalRows: rows.length,
       eligibleRows: students.length,
       importedCount,
-      newInvitesSent: newStudentsToEmail.length,
+      newInvitesSent: uniqueStudents.length,
       skippedCount: skipped.length,
       skippedRows: skipped.slice(0, 20),
       mode: importMode,

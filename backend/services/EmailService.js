@@ -55,6 +55,41 @@ function smtpConfigured() {
 // ─── EmailService ─────────────────────────────────────────────────────────────
 class EmailService {
   /**
+   * Verify SMTP configuration + connectivity.
+   */
+  static async verifyConnection() {
+    if (!smtpConfigured()) {
+      return {
+        configured: false,
+        ok: false,
+        reason: 'SMTP_USER/SMTP_PASS missing',
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: parseInt(process.env.SMTP_PORT || '587', 10) === 465,
+      };
+    }
+
+    try {
+      await getTransporter().verify();
+      return {
+        configured: true,
+        ok: true,
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: parseInt(process.env.SMTP_PORT || '587', 10) === 465,
+      };
+    } catch (err) {
+      return {
+        configured: true,
+        ok: false,
+        error: err.message,
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: parseInt(process.env.SMTP_PORT || '587', 10) === 465,
+      };
+    }
+  }
+  /**
    * Send an invitation email asking a student to submit their interview experience.
    */
   static async sendExperienceInvitation({ to, studentName, companyName }) {

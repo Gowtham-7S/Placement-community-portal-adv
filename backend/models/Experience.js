@@ -231,14 +231,20 @@ class Experience {
 
   static async updateApprovalStatus(id, status, approvedBy, comment = null) {
     try {
+      const normalizedStatus = String(status || '').toLowerCase();
+      const isRejected = normalizedStatus === 'rejected';
+      const adminComment = isRejected ? null : (comment || null);
+      const rejectionReason = isRejected ? (comment || null) : null;
+
       const query = `
         UPDATE experiences 
-        SET approval_status = $1, approved_by = $2, approved_at = NOW(), admin_comments = $3, updated_at = NOW()
-        WHERE id = $4
+        SET approval_status = $1, approved_by = $2, approved_at = NOW(),
+            admin_comments = $3, rejection_reason = $4, updated_at = NOW()
+        WHERE id = $5
         RETURNING id, approval_status, approved_at
       `;
 
-      const result = await pool.query(query, [status, approvedBy, comment || null, id]);
+      const result = await pool.query(query, [status, approvedBy, adminComment, rejectionReason, id]);
       return result.rows[0] || null;
     } catch (error) {
       throw new Error(`Error updating approval status: ${error.message}`);

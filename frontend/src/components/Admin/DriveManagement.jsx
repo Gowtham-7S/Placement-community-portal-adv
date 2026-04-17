@@ -381,99 +381,152 @@ const DriveManagement = () => {
     </div>
   );
 
-  // ---- DETAIL VIEW ----
+  // ---- DETAIL VIEW (UPDATED UI) ----
   if (view === 'detail' && selectedDrive) {
     return (
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
+        {/* Back */}
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 text-slate-500 hover:text-[#6d5dfc] mb-6 transition-colors group"
+          className="flex items-center gap-2 text-slate-500 hover:text-[#6d5dfc] mb-6"
         >
-          <ArrowBackIcon fontSize="small" className="group-hover:-translate-x-1 transition-transform" />
+          <ArrowBackIcon fontSize="small" />
           Back to Drives
         </button>
 
-        {/* Header Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-8">
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold ${getLogoBg(selectedDrive.company_name)}`}>
-              {(selectedDrive.company_name || '?')[0].toUpperCase()}
+        {/* Main Card */}
+        <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 mb-8">
+
+          {/* Header */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+
+            {/* Logo */}
+            <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center text-xl font-bold">
+              {(selectedDrive.company_name || '?')[0]}
             </div>
+
+            {/* Title + Info */}
             <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold text-slate-900">
-                  {selectedDrive.company_name} — <span className="text-slate-600 font-medium">{selectedDrive.role_name}</span>
+                  {selectedDrive.company_name} - {selectedDrive.role_name}
                 </h1>
                 <StatusBadge drive={selectedDrive} />
               </div>
 
-              <div className="flex flex-wrap gap-4 text-sm text-slate-500 mb-6">
-                <div className="flex items-center gap-1.5">
-                  <CalendarIcon fontSize="small" className="text-slate-400" />
-                  {selectedDrive.interview_date ? new Date(selectedDrive.interview_date).toLocaleDateString() : 'TBD'}
+              {/* Top Info Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm text-slate-600">
+                <div>
+                  <p className="text-xs text-slate-400">Date</p>
+                  <p className="font-medium">
+                    {selectedDrive.interview_date
+                      ? new Date(selectedDrive.interview_date).toDateString()
+                      : 'TBD'}
+                  </p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <MoneyIcon fontSize="small" className="text-slate-400" />
-                  {formatCTC(selectedDrive)}
-                </div>
-                {selectedDrive.total_positions && (
-                  <div className="flex items-center gap-1.5">
-                    <PeopleIcon fontSize="small" className="text-slate-400" />
-                    {selectedDrive.filled_positions || 0}/{selectedDrive.total_positions} positions filled
-                  </div>
-                )}
-              </div>
 
-              <div className="space-y-3">
-                {selectedDrive.drive_details && (
-                  <p className="text-slate-600 leading-relaxed">{selectedDrive.drive_details}</p>
-                )}
-                {selectedDrive.eligible_batches && (
-                  <div>
-                    <span className="font-semibold text-slate-900">Eligible Batches: </span>
-                    <span className="text-slate-600">{selectedDrive.eligible_batches}</span>
-                  </div>
-                )}
-                {selectedDrive.requirements && (
-                  <div>
-                    <span className="font-semibold text-slate-900">Requirements: </span>
-                    <span className="text-slate-600">{selectedDrive.requirements}</span>
-                  </div>
-                )}
-                {getRoundModesLabel(selectedDrive) && (
-                  <div>
-                    <span className="font-semibold text-slate-900">Mode: </span>
-                    <span className="text-slate-600 capitalize">{getRoundModesLabel(selectedDrive)}</span>
-                  </div>
-                )}
+                <div>
+                  <p className="text-xs text-slate-400">LPA</p>
+                  <p className="font-medium">{formatCTC(selectedDrive)}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-slate-400">Positions</p>
+                  <p className="font-medium">
+                    {(selectedDrive.filled_positions || 0)} Filled
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-slate-400">Mode</p>
+                  <p className="font-medium capitalize">
+                    {getRoundModesLabel(selectedDrive)}
+                  </p>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Bottom Info Boxes */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+
+            <div className="bg-[#f3f0ff] rounded-xl p-4">
+              <p className="text-xs text-slate-500">ELIGIBLE BATCHES</p>
+              <p className="font-semibold text-slate-900 mt-1">
+                {selectedDrive.eligible_batches || 'N/A'}
+              </p>
+            </div>
+
+            <div className="bg-[#f3f0ff] rounded-xl p-4">
+              <p className="text-xs text-slate-500">REQUIREMENTS</p>
+              <p className="font-semibold text-slate-900 mt-1">
+                {selectedDrive.requirements || 'N/A'}
+              </p>
+            </div>
+
+            <div className="bg-[#f3f0ff] rounded-xl p-4">
+              <p className="text-xs text-slate-500">MODE</p>
+              <p className="font-semibold text-slate-900 mt-1 capitalize">
+                {getRoundModesLabel(selectedDrive) || 'N/A'}
+              </p>
+            </div>
+
           </div>
         </div>
 
         {/* Interview Rounds */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-200 bg-slate-50/50">
-            <h3 className="text-lg font-bold text-slate-900">Interview Rounds</h3>
+        <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
+
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-bold text-slate-900">
+              Interview Rounds
+            </h3>
+            <span className="text-sm text-slate-400">
+              {(selectedDrive.rounds || []).length} Phases Total
+            </span>
           </div>
-          <div className="p-6 space-y-4">
-            {(selectedDrive.rounds || []).length === 0 && (
-              <div className="text-center text-slate-500">No round details available for this drive.</div>
-            )}
+
+          <div className="grid md:grid-cols-2 gap-6">
+
             {(selectedDrive.rounds || []).map((round, index) => (
-              <div key={round.id || index} className="border border-slate-200 rounded-xl p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                  <h4 className="text-base font-semibold text-slate-900">
-                    Round {round.round_number || index + 1}: {round.round_name}
-                  </h4>
-                  <div className="text-xs text-slate-500 capitalize">{round.mode}</div>
+              <div
+                key={index}
+                className="bg-slate-50 border border-slate-200 rounded-xl p-5"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs bg-[#e0e7ff] text-[#4338ca] px-2 py-1 rounded-full">
+                    ROUND {index + 1}
+                  </span>
                 </div>
-                <p className="text-sm text-slate-600 mb-2">{round.round_description}</p>
-                <div className="text-xs text-slate-500">
-                  Expected Date: {round.expected_date ? new Date(round.expected_date).toLocaleDateString() : 'TBD'}
+
+                <h4 className="text-lg font-semibold text-slate-900 mb-1">
+                  {round.round_name || `Round ${index + 1}`}
+                </h4>
+
+                <p className="text-sm text-slate-600 mb-3">
+                  {round.round_description || 'No description provided.'}
+                </p>
+
+                <div className="text-xs text-slate-500 flex justify-between">
+                  <span>
+                    {round.expected_date
+                      ? new Date(round.expected_date).toDateString()
+                      : 'TBD'}
+                  </span>
+
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      round.mode === 'online'
+                        ? 'bg-green-100 text-green-600'
+                        : 'bg-purple-100 text-purple-600'
+                    }`}
+                  >
+                    {round.mode}
+                  </span>
                 </div>
               </div>
             ))}
+
           </div>
         </div>
       </div>
@@ -613,70 +666,88 @@ const DriveManagement = () => {
           <div
             key={drive.id}
             onClick={() => handleDriveClick(drive)}
-            className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer group relative"
+            className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-all cursor-pointer group relative"
           >
             {/* Edit / Delete action buttons */}
-            <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
               <button
                 onClick={(e) => handleEditOpen(e, drive)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-[#6d5dfc] hover:bg-[#f3f0ff] transition-colors"
+                className="p-2 rounded-lg text-slate-500 hover:text-[#6d5dfc] hover:bg-[#eff2ff] transition-colors"
                 title="Edit drive"
               >
                 <EditIcon fontSize="small" />
               </button>
               <button
                 onClick={(e) => handleDeleteOpen(e, drive)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-[#fee2e2] transition-colors"
                 title="Delete drive"
               >
                 <DeleteIcon fontSize="small" />
               </button>
             </div>
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-              {/* Logo */}
-              <div className={`w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center text-lg font-bold ${getLogoBg(drive.company_name)}`}>
+
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+              <div className={`w-14 h-14 rounded-lg flex items-center justify-center text-2xl font-bold ${getLogoBg(drive.company_name)}`}>
                 {(drive.company_name || '?')[0].toUpperCase()}
               </div>
 
-              {/* Content */}
               <div className="flex-1 min-w-0">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#6d5dfc] transition-colors truncate">
-                    {drive.company_name}
-                  </h3>
-                  <div className="hidden md:block">
-                    <StatusBadge drive={drive} />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="text-xl font-bold text-slate-900 truncate">{drive.company_name}</h3>
+                    <p className="text-sm text-slate-500 truncate">{drive.role_name}</p>
+                  </div>
+                  <StatusBadge drive={drive} />
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-slate-600">
+                  <div className="flex items-center gap-1">
+                    <CalendarIcon fontSize="inherit" className="text-slate-400" />
+                    <span>{drive.interview_date ? new Date(drive.interview_date).toLocaleDateString() : 'TBD'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <MoneyIcon fontSize="inherit" className="text-slate-400" />
+                    <span>{formatCTC(drive)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <PeopleIcon fontSize="inherit" className="text-slate-400" />
+                    <span>{(drive.filled_positions || 0)}/{drive.total_positions || 0} filled</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <BusinessIcon fontSize="inherit" className="text-slate-400" />
+                    <span>{getRoundModesLabel(drive) || 'N/A'}</span>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 items-center">
-                  <span className="flex items-center gap-1">
-                    <BusinessIcon fontSize="inherit" className="text-slate-400" />
-                    {drive.role_name}
-                  </span>
-                  {drive.interview_date && (
-                    <>
-                      <span className="hidden md:inline text-slate-300">|</span>
-                      <span className="flex items-center gap-1">
-                        <CalendarIcon fontSize="inherit" className="text-slate-400" />
-                        {new Date(drive.interview_date).toLocaleDateString()}
-                      </span>
-                    </>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {drive.eligible_batches && (
+                    <span className="text-xs font-semibold bg-[#eef2ff] text-[#4338ca] px-3 py-1 rounded-full">Eligible: {drive.eligible_batches}</span>
                   )}
+                  {drive.requirements && (
+                    <span className="text-xs font-semibold bg-[#ecfdf5] text-[#065f46] px-3 py-1 rounded-full">Req: {drive.requirements.split(',')[0]}</span>
+                  )}
+                  <span className="text-xs font-semibold bg-[#fef3c7] text-[#92400e] px-3 py-1 rounded-full">Mode: {getRoundModesLabel(drive)}</span>
                 </div>
-              </div>
 
-              {/* Right Side Stats */}
-              <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-2 md:mt-0 gap-1">
-                <div className="md:text-right">
-                  <div className="text-lg font-bold text-slate-900">{formatCTC(drive)}</div>
-                  {drive.total_positions && (
-                    <div className="text-xs text-slate-500">{drive.total_positions} positions</div>
-                  )}
-                </div>
-                <div className="md:hidden">
-                  <StatusBadge drive={drive} />
-                </div>
+                {drive.rounds && drive.rounds.length > 0 && (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {drive.rounds.slice(0, 2).map((round, index) => (
+                      <div key={`${drive.id}-r-${index}`} className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                        <h4 className="text-sm font-semibold text-slate-900">{round.round_name || `Round ${index + 1}`}</h4>
+                        <p className="text-xs text-slate-600 truncate">{round.round_description || 'No details available'}</p>
+                        <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                          <span>{round.expected_date ? new Date(round.expected_date).toLocaleDateString() : 'Date TBD'}</span>
+                          <span className="capitalize">{round.mode}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {drive.rounds.length > 2 && (
+                      <div className="bg-slate-50 border border-dashed border-slate-300 rounded-lg p-3 flex items-center justify-center text-xs text-slate-500">
+                        +{drive.rounds.length - 2} more rounds
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

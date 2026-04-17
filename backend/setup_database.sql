@@ -52,6 +52,8 @@ CREATE TABLE companies (
   name VARCHAR(255) UNIQUE NOT NULL,
   description TEXT,
   website VARCHAR(255) CHECK (website ~* '^https?://'),
+  parent_org VARCHAR(255),
+  overall_description TEXT,
   headquarters VARCHAR(255),
   industry VARCHAR(100),
   company_size VARCHAR(50),
@@ -67,6 +69,72 @@ CREATE INDEX idx_companies_industry ON companies(industry);
 
 CREATE TRIGGER trg_companies_update
 BEFORE UPDATE ON companies
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- ============================================================================
+-- 2A. COMPANY JOB ROLE TABLE
+-- ============================================================================
+CREATE TABLE company_job_roles (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL UNIQUE REFERENCES companies(id) ON DELETE CASCADE,
+  title VARCHAR(255),
+  eligibility TEXT,
+  compensation VARCHAR(255),
+  bonuses TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_company_job_roles_update
+BEFORE UPDATE ON company_job_roles
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- ============================================================================
+-- 2B. COMPANY INTERNSHIP TABLE
+-- ============================================================================
+CREATE TABLE company_internships (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL UNIQUE REFERENCES companies(id) ON DELETE CASCADE,
+  duration VARCHAR(255),
+  schedule VARCHAR(255),
+  stipend VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_company_internships_update
+BEFORE UPDATE ON company_internships
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- ============================================================================
+-- 2C. COMPANY SELECTION PROCESS TABLE
+-- ============================================================================
+CREATE TABLE company_selection_process (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL UNIQUE REFERENCES companies(id) ON DELETE CASCADE,
+  steps JSONB,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_company_selection_process_update
+BEFORE UPDATE ON company_selection_process
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- ============================================================================
+-- 2D. COMPANY LOCATIONS TABLE
+-- ============================================================================
+CREATE TABLE company_locations (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL UNIQUE REFERENCES companies(id) ON DELETE CASCADE,
+  city VARCHAR(255),
+  address TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_company_locations_update
+BEFORE UPDATE ON company_locations
 FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 
 -- ============================================================================

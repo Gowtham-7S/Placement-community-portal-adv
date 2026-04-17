@@ -216,16 +216,22 @@ const SubmitExperience = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div className="space-y-2">
                       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Round Type</label>
-                      <select
+                      <input
+                        type="text"
+                        list={`round-types-${rIndex}`}
                         value={round.round_type}
                         onChange={(e) => updateRound(rIndex, 'round_type', e.target.value)}
                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#6d5dfc] focus:border-transparent outline-none bg-white"
-                      >
-                        <option value="Technical">Technical</option>
-                        <option value="HR">HR</option>
-                        <option value="Coding">Coding</option>
-                        <option value="Managerial">Managerial</option>
-                      </select>
+                        placeholder="Select or type round type"
+                      />
+                      <datalist id={`round-types-${rIndex}`}>
+                        <option value="Technical" />
+                        <option value="HR" />
+                        <option value="Coding" />
+                        <option value="Managerial" />
+                        <option value="Group Discussion" />
+                        <option value="Other" />
+                      </datalist>
                     </div>
                     <div className="space-y-2">
                       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Difficulty</label>

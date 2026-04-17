@@ -22,6 +22,21 @@ exports.notFoundHandler = (req, res, next) => {
 };
 
 exports.errorHandler = (err, req, res, next) => {
+  if (err?.name === 'MulterError') {
+    const statusCode = 400;
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'Excel file is too large. Maximum allowed size is 10MB.'
+      : err.message || 'File upload failed';
+
+    logger.error(`${statusCode} - ${message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+    return res.status(statusCode).json({
+      success: false,
+      message,
+      code: err.code || 'FILE_UPLOAD_ERROR',
+      stack: process.env.NODE_ENV === 'production' ? null : err.stack,
+    });
+  }
+
   // Use AppError's statusCode if available, else fall back to response status or 500
   const statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
   logger.error(`${statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);

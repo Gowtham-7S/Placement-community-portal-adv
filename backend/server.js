@@ -7,6 +7,7 @@ const config = require('./config/environment');
 const { pool, initializeDatabase } = require('./config/database');
 const logger = require('./utils/logger');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
+const EmailService = require('./services/EmailService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -75,6 +76,20 @@ const startServer = async () => {
 
     // Initialize database (if needed)
     await initializeDatabase();
+
+    // SMTP status (non-fatal)
+    try {
+      const smtpStatus = await EmailService.verifyConnection();
+      if (smtpStatus.configured && smtpStatus.ok) {
+        logger.info(`📧 SMTP ready: ${smtpStatus.host}:${smtpStatus.port} (secure=${smtpStatus.secure})`);
+      } else if (smtpStatus.configured && !smtpStatus.ok) {
+        logger.warn(`📧 SMTP configured but not ready: ${smtpStatus.error || 'unknown error'}`);
+      } else {
+        logger.warn('📧 SMTP not configured (SMTP_USER/SMTP_PASS missing)');
+      }
+    } catch (smtpErr) {
+      logger.warn(`📧 SMTP status check failed: ${smtpErr.message}`);
+    }
 
     // Start server
     const server = app.listen(config.PORT, () => {

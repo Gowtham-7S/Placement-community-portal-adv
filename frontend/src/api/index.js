@@ -52,9 +52,7 @@ export const experienceAccessAPI = {
   getAll: (params) => axiosInstance.get('/admin/experience-access', { params }),
   upsert: (data) => axiosInstance.post('/admin/experience-access', data),
   remove: (id) => axiosInstance.delete(`/admin/experience-access/${id}`),
-  importFromExcel: (formData) => axiosInstance.post('/admin/experience-access/import', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
+  importFromExcel: (formData) => axiosInstance.post('/admin/experience-access/import', formData),
 };
 
 // Analytics APIs

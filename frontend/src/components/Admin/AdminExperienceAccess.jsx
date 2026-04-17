@@ -118,9 +118,7 @@ const AdminExperienceAccess = () => {
       formData.append('file', excelFile);
       formData.append('mode', importMode);
 
-      const res = await axiosInstance.post('/admin/experience-access/import', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await axiosInstance.post('/admin/experience-access/import', formData);
 
       setImportSummary(res.data.data || null);
       setSuccess('Excel imported successfully');
@@ -201,14 +199,19 @@ const AdminExperienceAccess = () => {
         </div>
 
         <p className="text-xs text-slate-500 mb-4">
-          Expected columns: Roll Number, Email (bitsathy.ac.in), Result, Rounds Attended, Total Rounds (or similar names).
+          Expected columns include Roll Number/Register Number, Email, Result/Status, and optionally round details. Selected/placed rows are accepted even when round columns are missing.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <input
             type="file"
             accept=".xlsx,.xls"
-            onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
+            onChange={(e) => {
+              setExcelFile(e.target.files?.[0] || null);
+              setError('');
+              setSuccess('');
+              setImportSummary(null);
+            }}
             className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
           />
 
