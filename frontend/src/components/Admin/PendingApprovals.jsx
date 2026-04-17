@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Check as CheckIcon, Close as CloseIcon, AccessTime as AccessTimeIcon,
   Refresh as RefreshIcon, Search as SearchIcon, FilterAlt as FilterIcon
@@ -28,15 +28,7 @@ const PendingApprovals = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectError, setRejectError] = useState('');
 
-  useEffect(() => {
-    fetchPendingApprovals();
-  }, [advFilters]);
-
-  useEffect(() => {
-    fetchAccessList();
-  }, []);
-
-  const fetchAccessList = async () => {
+  const fetchAccessList = useCallback(async () => {
     try {
       setAccessLoading(true);
       const response = await experienceAccessAPI.getAll();
@@ -52,9 +44,9 @@ const PendingApprovals = () => {
     } finally {
       setAccessLoading(false);
     }
-  };
+  }, []);
 
-  const fetchPendingApprovals = async () => {
+  const fetchPendingApprovals = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -73,7 +65,15 @@ const PendingApprovals = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [advFilters]);
+
+  useEffect(() => {
+    fetchPendingApprovals();
+  }, [fetchPendingApprovals]);
+
+  useEffect(() => {
+    fetchAccessList();
+  }, [fetchAccessList]);
 
   const openDetails = async (item) => {
     if (!item?.id) return;

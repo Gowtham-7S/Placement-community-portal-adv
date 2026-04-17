@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search as SearchIcon,
   CalendarToday as CalendarIcon, ArrowBack as ArrowBackIcon,
@@ -64,12 +64,7 @@ const DriveManagement = () => {
   const [deleteDrive, setDeleteDrive] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchDrives();
-    fetchCompanies();
-  }, []);
-
-  const fetchDrives = async () => {
+  const fetchDrives = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -88,16 +83,24 @@ const DriveManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [advFilters]);
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
     try {
       const res = await companyAPI.getAll({ limit: 200 });
       setCompanies(res.data.data || []);
     } catch (err) {
       console.error('Failed to load companies:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDrives();
+  }, [fetchDrives]);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, [fetchCompanies]);
 
   const handleDriveFormChange = (e) => {
     const { name, value } = e.target;
