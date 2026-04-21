@@ -82,6 +82,10 @@ const validators = {
       .withMessage('Company name is required')
       .isLength({ min: 2 })
       .withMessage('Company name must be at least 2 characters'),
+    body('batch')
+      .optional({ checkFalsy: true })
+      .matches(/^\d{4}-\d{4}$/)
+      .withMessage('Batch must be in YYYY-YYYY format'),
     body('description').optional({ checkFalsy: true }).trim(),
     body('website').optional({ checkFalsy: true }).isURL({ protocols: ['http', 'https'], require_protocol: true }).withMessage('Invalid URL format (must start with http:// or https://)'),
     body('industry').optional({ checkFalsy: true }).trim(),
@@ -90,13 +94,21 @@ const validators = {
     body('founded_year').optional({ checkFalsy: true }).isInt({ min: 1800, max: 2100 }).withMessage('Invalid year'),
   ],
 
+  companyBatchValidation: [
+    body('batch')
+      .trim()
+      .notEmpty()
+      .withMessage('Batch is required')
+      .matches(/^\d{4}-\d{4}$/)
+      .withMessage('Batch must be in YYYY-YYYY format'),
+  ],
+
   // Drive validation
   driveValidation: [
     body('company_id').isInt().withMessage('Company ID must be an integer'),
     body('role_name')
+      .optional({ checkFalsy: true })
       .trim()
-      .notEmpty()
-      .withMessage('Role name is required')
       .isLength({ min: 2 })
       .withMessage('Role name must be at least 2 characters'),
     body('eligible_batches')
@@ -105,6 +117,10 @@ const validators = {
     body('requirements')
       .optional({ checkFalsy: true })
       .trim(),
+    body('batch')
+      .optional({ checkFalsy: true })
+      .matches(/^\d{4}-\d{4}$/)
+      .withMessage('Batch must be in YYYY-YYYY format'),
     body('ctc')
       .optional({ checkFalsy: true })
       .isFloat({ min: 0 })
@@ -120,17 +136,19 @@ const validators = {
     body('rounds.*.round_name')
       .optional({ checkFalsy: true })
       .trim()
-      .notEmpty()
-      .withMessage('Round name is required'),
+      .isLength({ min: 2 })
+      .withMessage('Round name must be at least 2 characters'),
     body('rounds.*.round_description')
       .optional({ checkFalsy: true })
-      .trim()
-      .notEmpty()
-      .withMessage('Round description is required'),
+      .trim(),
     body('rounds.*.mode')
       .optional({ checkFalsy: true })
       .isIn(['online', 'offline'])
       .withMessage('Round mode must be online or offline'),
+    body('interview_date')
+      .optional({ checkFalsy: true })
+      .isISO8601()
+      .withMessage('Drive date must be a valid date'),
     body('rounds.*.expected_date')
       .optional({ checkFalsy: true })
       .isISO8601()

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { companyAPI } from '../../api';
 import {
   Dialog,
@@ -14,25 +15,41 @@ import {
   MoreVert as MoreVertIcon,
   Add as AddIcon,
   Search as SearchIcon,
+  ArrowBack as ArrowBackIcon,
+  Business as BusinessIcon,
+   Layers as LayersIcon,
 } from '@mui/icons-material';
 
+const createEmptyForm = (batch = '') => ({
+  name: '',
+  batch,
+  website: '',
+  description: '',
+  parent_org: '',
+  overall_description: '',
+  job_role: { title: '', eligibility: '', compensation: '', bonuses: '' },
+  internship: { duration: '', schedule: '', stipend: '' },
+  selection_process: { steps: '' },
+  location: { city: '', address: '' },
+});
+
+const formatBatchLabel = (batch = '') => String(batch).replace('-', '–');
+
 const CompanyManagement = () => {
+  const navigate = useNavigate();
+  const { batch: selectedBatch = '' } = useParams();
+  const isBatchView = Boolean(selectedBatch);
+
   const [companies, setCompanies] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    website: '',
-    description: '',
-    parent_org: '',
-    overall_description: '',
-    job_role: { title: '', eligibility: '', compensation: '', bonuses: '' },
-    internship: { duration: '', schedule: '', stipend: '' },
-    selection_process: { steps: '' },
-    location: { city: '', address: '' },
-  });
+  const [formData, setFormData] = useState(createEmptyForm(selectedBatch));
   const [searchTerm, setSearchTerm] = useState('');
+  const [batchModalOpen, setBatchModalOpen] = useState(false);
+  const [newBatch, setNewBatch] = useState('');
+  const [batchSaving, setBatchSaving] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -40,46 +57,65 @@ const CompanyManagement = () => {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
 
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
-
-  const fetchCompanies = async () => {
-    try {
-      setLoading(true);
-      const response = await companyAPI.getAll({ limit: 100 });
-      const payload = response?.data?.data?.data || response?.data?.data || [];
-      setCompanies(Array.isArray(payload) ? payload : []);
-    } catch (error) {
-      console.error('Failed to load companies');
-      setCompanies([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const normalizeSteps = (steps) => {
     if (Array.isArray(steps)) return steps.filter(Boolean).join('\n');
     return steps || '';
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      website: '',
-      description: '',
-      parent_org: '',
-      overall_description: '',
-      job_role: { title: '', eligibility: '', compensation: '', bonuses: '' },
-      internship: { duration: '', schedule: '', stipend: '' },
-      selection_process: { steps: '' },
-      location: { city: '', address: '' },
-    });
-  };
+  const resetForm = useCallback((batchValue = selectedBatch) => {
+    setFormData(createEmptyForm(batchValue));
+  }, [selectedBatch]);
+
+  const fetchCompanies = useCallback(async () => {
+    if (!selectedBatch) {
+      setCompanies([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await companyAPI.getAll({ limit: 100, batch: selectedBatch });
+      const payload = response?.data?.data?.data || response?.data?.data || [];
+      setCompanies(Array.isArray(payload) ? payload : []);
+    } catch (error) {
+      console.error('Failed to load companies:', error);
+      setCompanies([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBatch]);
+
+  const fetchBatches = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await companyAPI.getBatches();
+      const payload = response?.data?.data || [];
+      setBatches(Array.isArray(payload) ? payload : []);
+    } catch (error) {
+      console.error('Failed to load company batches:', error);
+      setBatches([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    resetForm(selectedBatch);
+  }, [resetForm, selectedBatch]);
+
+  useEffect(() => {
+    if (isBatchView) {
+      fetchCompanies();
+      return;
+    }
+
+    fetchBatches();
+  }, [fetchBatches, fetchCompanies, isBatchView]);
 
   const handleOpenModal = async (company = null) => {
     handleMenuClose();
     setModalOpen(true);
+
     if (company?.id) {
       setModalLoading(true);
       setEditingId(company.id);
@@ -88,6 +124,7 @@ const CompanyManagement = () => {
         const full = res?.data?.data || res?.data || {};
         setFormData({
           name: full?.name || '',
+          batch: full?.batch || selectedBatch,
           website: full?.website || '',
           description: full?.description || '',
           parent_org: full?.parent_org || '',
@@ -111,12 +148,12 @@ const CompanyManagement = () => {
         });
       } catch (error) {
         console.error('Failed to load company details:', error);
-        resetForm();
+        resetForm(selectedBatch);
       } finally {
         setModalLoading(false);
       }
     } else {
-      resetForm();
+      resetForm(selectedBatch);
       setEditingId(null);
     }
   };
@@ -126,10 +163,12 @@ const CompanyManagement = () => {
     try {
       const steps = formData.selection_process.steps
         .split('\n')
-        .map((s) => s.trim())
+        .map((step) => step.trim())
         .filter(Boolean);
+
       const payload = {
         name: formData.name.trim(),
+        batch: selectedBatch,
         website: formData.website.trim() || null,
         description: formData.description.trim() || null,
         parent_org: formData.parent_org.trim() || null,
@@ -164,22 +203,23 @@ const CompanyManagement = () => {
       fetchCompanies();
     } catch (error) {
       const validationErrors = error.response?.data?.errors;
-      const msg = Array.isArray(validationErrors) && validationErrors.length > 0
-        ? validationErrors.map((x) => x.message).join(', ')
+      const message = Array.isArray(validationErrors) && validationErrors.length > 0
+        ? validationErrors.map((item) => item.message).join(', ')
         : (error.response?.data?.message || error.message || 'Operation failed');
-      alert(msg);
+      alert(message);
     }
   };
 
   const handleDelete = async () => {
     handleMenuClose();
     if (!selectedCompanyId) return;
-    if (window.confirm('Are you sure you want to delete this company?')) {
+
+    if (window.confirm(`Delete this company from ${formatBatchLabel(selectedBatch)}?`)) {
       try {
         await companyAPI.delete(selectedCompanyId);
         fetchCompanies();
       } catch (error) {
-        console.error('Failed to delete company');
+        console.error('Failed to delete company:', error);
       }
     }
   };
@@ -200,6 +240,7 @@ const CompanyManagement = () => {
     setSelectedCompany(null);
     setDetailsOpen(true);
     setDetailsLoading(true);
+
     try {
       const res = await companyAPI.getById(company.id);
       const full = res?.data?.data || res?.data || null;
@@ -211,13 +252,37 @@ const CompanyManagement = () => {
     }
   };
 
-  const filteredCompanies = companies.filter((c) => {
+  const filteredCompanies = useMemo(() => {
     const term = searchTerm.toLowerCase();
-    return (
-      (c.name || '').toLowerCase().includes(term) ||
-      (c.description || '').toLowerCase().includes(term)
-    );
-  });
+    return companies.filter((company) => (
+      (company.name || '').toLowerCase().includes(term) ||
+      (company.description || '').toLowerCase().includes(term)
+    ));
+  }, [companies, searchTerm]);
+
+  const filteredBatches = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return batches.filter((entry) => entry.batch.toLowerCase().includes(term));
+  }, [batches, searchTerm]);
+
+  const handleCreateBatch = async (e) => {
+    e.preventDefault();
+    try {
+      setBatchSaving(true);
+      await companyAPI.createBatch({ batch: newBatch.trim() });
+      setBatchModalOpen(false);
+      setNewBatch('');
+      await fetchBatches();
+    } catch (error) {
+      const validationErrors = error.response?.data?.errors;
+      const message = Array.isArray(validationErrors) && validationErrors.length > 0
+        ? validationErrors.map((item) => item.message).join(', ')
+        : (error.response?.data?.message || error.message || 'Failed to create batch');
+      alert(message);
+    } finally {
+      setBatchSaving(false);
+    }
+  };
 
   const getInitialColor = (letter = 'C') => {
     const colors = [
@@ -238,12 +303,117 @@ const CompanyManagement = () => {
     );
   }
 
+  if (!isBatchView) {
+    return (
+      <div className="max-w-7xl mx-auto min-h-screen">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Company Batches</h1>
+            <p className="text-slate-500 mt-1">Choose a batch to manage companies under that academic cycle.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBatchModalOpen(true)}
+            className="bg-[#6d5dfc] hover:bg-[#5b47d6] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors w-full md:w-auto justify-center"
+          >
+            <LayersIcon fontSize="small" />
+            Add Batch
+          </button>
+        </div>
+
+        <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm mb-8 flex items-center gap-2">
+          <SearchIcon className="text-slate-400 ml-2" />
+          <input
+            type="text"
+            placeholder="Search by batch..."
+            className="flex-1 py-2 outline-none text-slate-700 placeholder-slate-400"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredBatches.map((entry) => (
+            <button
+              key={entry.batch}
+              type="button"
+              onClick={() => navigate(`/admin/companies/${entry.batch}`)}
+              className="text-left bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-all p-6 group"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-[#ede9fe] text-[#5b47d6] flex items-center justify-center">
+                  <BusinessIcon />
+                </div>
+                <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">
+                  {entry.company_count} companies
+                </span>
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mt-6 group-hover:text-[#6d5dfc] transition-colors">
+                {formatBatchLabel(entry.batch)}
+              </h3>
+              <p className="text-slate-500 mt-2">
+                Open batch-specific company management for this cycle.
+              </p>
+            </button>
+          ))}
+        </div>
+
+        {filteredBatches.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">??</div>
+            <h3 className="text-lg font-medium text-slate-900">No batches found</h3>
+            <p className="text-slate-500">Try adjusting your search terms</p>
+          </div>
+        )}
+
+        <Dialog open={batchModalOpen} onClose={() => setBatchModalOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle className="font-bold border-b border-slate-200">Add New Batch</DialogTitle>
+          <form onSubmit={handleCreateBatch}>
+            <DialogContent className="pt-6">
+              <div className="space-y-4 py-2">
+                <div className="bg-[#f6f8ff] border border-[#dfe6ff] rounded-lg p-4">
+                  <p className="text-sm text-slate-700">
+                    Create a batch card first, then open it and add companies inside that batch.
+                  </p>
+                </div>
+                <TextField
+                  label="Batch"
+                  fullWidth
+                  required
+                  value={newBatch}
+                  onChange={(e) => setNewBatch(e.target.value)}
+                  placeholder="2023-2027"
+                  helperText="Use YYYY-YYYY format"
+                />
+              </div>
+            </DialogContent>
+            <DialogActions className="p-4 border-t border-slate-200">
+              <Button onClick={() => setBatchModalOpen(false)} className="text-slate-500">Cancel</Button>
+              <Button type="submit" variant="contained" disabled={batchSaving} className="bg-[#6d5dfc] hover:bg-[#5b47d6] shadow-none">
+                {batchSaving ? 'Creating...' : 'Create Batch'}
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto min-h-screen">
+      <button
+        type="button"
+        onClick={() => navigate('/admin/companies')}
+        className="inline-flex items-center gap-2 text-slate-500 hover:text-[#6d5dfc] mb-6"
+      >
+        <ArrowBackIcon fontSize="small" />
+        Back to batches
+      </button>
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Companies</h1>
-          <p className="text-slate-500 mt-1">Add company name and full description.</p>
+          <h1 className="text-2xl font-bold text-slate-900">Companies • {formatBatchLabel(selectedBatch)}</h1>
+          <p className="text-slate-500 mt-1">Add, edit, and delete companies linked to this batch.</p>
         </div>
         <button
           onClick={() => handleOpenModal()}
@@ -286,9 +456,15 @@ const CompanyManagement = () => {
                 </button>
               </div>
 
-              <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#6d5dfc] transition-colors">
-                {company.name}
-              </h3>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#6d5dfc] transition-colors">
+                  {company.name}
+                </h3>
+                <span className="text-[11px] font-semibold bg-[#eef2ff] text-[#4338ca] px-2.5 py-1 rounded-full">
+                  {formatBatchLabel(company.batch)}
+                </span>
+              </div>
+
               <p
                 className="text-[1.05rem] text-slate-600 mt-2 line-clamp-4 whitespace-pre-wrap leading-8"
                 style={{ fontFamily: 'Inter, "Segoe UI", Roboto, Arial, sans-serif' }}
@@ -304,7 +480,11 @@ const CompanyManagement = () => {
         <div className="text-center py-12">
           <div className="text-6xl mb-4">??</div>
           <h3 className="text-lg font-medium text-slate-900">No companies found</h3>
-          <p className="text-slate-500">Try adjusting your search terms</p>
+          <p className="text-slate-500">
+            {companies.length === 0
+              ? `No companies have been added for ${formatBatchLabel(selectedBatch)} yet.`
+              : 'Try adjusting your search terms'}
+          </p>
         </div>
       )}
 
@@ -319,12 +499,14 @@ const CompanyManagement = () => {
           },
         }}
       >
-        <MenuItem onClick={() => handleOpenModal(companies.find((c) => c.id === selectedCompanyId))}>Edit Company</MenuItem>
+        <MenuItem onClick={() => handleOpenModal(companies.find((company) => company.id === selectedCompanyId))}>Edit Company</MenuItem>
         <MenuItem onClick={handleDelete} className="text-red-600">Delete</MenuItem>
       </Menu>
 
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle className="font-bold border-b border-slate-200">{editingId ? 'Edit Company' : 'Add New Company'}</DialogTitle>
+        <DialogTitle className="font-bold border-b border-slate-200">
+          {editingId ? `Edit Company • ${formatBatchLabel(selectedBatch)}` : `Add New Company • ${formatBatchLabel(selectedBatch)}`}
+        </DialogTitle>
         <DialogContent className="pt-6">
           {modalLoading && (
             <div className="flex justify-center items-center h-40">
@@ -332,182 +514,173 @@ const CompanyManagement = () => {
             </div>
           )}
           {!modalLoading && (
-          <form onSubmit={handleSubmit} className="space-y-6 py-4">
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">Company Info</h3>
-            <TextField
-              label="Company Name"
-              name="name"
-              fullWidth
-              value={formData.name}
-              onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-              required
-              variant="outlined"
-              size="small"
-            />
-            <TextField
-              label="Website"
-              name="website"
-              fullWidth
-              value={formData.website}
-              onChange={(e) => setFormData((prev) => ({ ...prev, website: e.target.value }))}
-              variant="outlined"
-              size="small"
-            />
-            <TextField
-              label="Parent Org"
-              name="parent_org"
-              fullWidth
-              value={formData.parent_org}
-              onChange={(e) => setFormData((prev) => ({ ...prev, parent_org: e.target.value }))}
-              variant="outlined"
-              size="small"
-            />
-            <TextField
-              label="Description"
-              name="description"
-              multiline
-              rows={4}
-              fullWidth
-              value={formData.description}
-              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              variant="outlined"
-              size="small"
-              InputProps={{
-                sx: {
-                  '& textarea': {
-                    fontSize: '1.08rem',
-                    lineHeight: 1.8,
-                    fontFamily: 'Inter, "Segoe UI", Roboto, Arial, sans-serif',
-                  },
-                },
-              }}
-              InputLabelProps={{
-                sx: {
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                },
-              }}
-            />
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-6 py-4">
+              <div className="bg-[#f6f8ff] border border-[#dfe6ff] rounded-lg p-4">
+                <p className="text-sm font-medium text-slate-700">
+                  This company will be saved under <span className="text-[#5b47d6] font-semibold">{formatBatchLabel(selectedBatch)}</span>.
+                </p>
+              </div>
 
-            <div className="bg-[#eef2ff] border border-[#e0e7ff] rounded-lg p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">Job Role</h3>
-              <TextField
-                label="Title"
-                fullWidth
-                value={formData.job_role.title}
-                onChange={(e) => setFormData((prev) => ({ ...prev, job_role: { ...prev.job_role, title: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-              <TextField
-                label="Eligibility"
-                fullWidth
-                multiline
-                rows={3}
-                value={formData.job_role.eligibility}
-                onChange={(e) => setFormData((prev) => ({ ...prev, job_role: { ...prev.job_role, eligibility: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-              <TextField
-                label="Compensation"
-                fullWidth
-                value={formData.job_role.compensation}
-                onChange={(e) => setFormData((prev) => ({ ...prev, job_role: { ...prev.job_role, compensation: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-              <TextField
-                label="Bonuses"
-                fullWidth
-                value={formData.job_role.bonuses}
-                onChange={(e) => setFormData((prev) => ({ ...prev, job_role: { ...prev.job_role, bonuses: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-            </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">Company Info</h3>
+                <TextField
+                  label="Company Name"
+                  name="name"
+                  fullWidth
+                  value={formData.name}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                  required
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  label="Website"
+                  name="website"
+                  fullWidth
+                  value={formData.website}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, website: e.target.value }))}
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  label="Parent Org"
+                  name="parent_org"
+                  fullWidth
+                  value={formData.parent_org}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, parent_org: e.target.value }))}
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  label="Description"
+                  name="description"
+                  multiline
+                  rows={4}
+                  fullWidth
+                  value={formData.description}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                  variant="outlined"
+                  size="small"
+                />
+              </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">Internship</h3>
-              <TextField
-                label="Duration"
-                fullWidth
-                value={formData.internship.duration}
-                onChange={(e) => setFormData((prev) => ({ ...prev, internship: { ...prev.internship, duration: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-              <TextField
-                label="Schedule"
-                fullWidth
-                value={formData.internship.schedule}
-                onChange={(e) => setFormData((prev) => ({ ...prev, internship: { ...prev.internship, schedule: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-              <TextField
-                label="Stipend"
-                fullWidth
-                value={formData.internship.stipend}
-                onChange={(e) => setFormData((prev) => ({ ...prev, internship: { ...prev.internship, stipend: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-            </div>
+              <div className="bg-[#eef2ff] border border-[#e0e7ff] rounded-lg p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">Job Role</h3>
+                <TextField
+                  label="Title"
+                  fullWidth
+                  value={formData.job_role.title}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, job_role: { ...prev.job_role, title: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  label="Eligibility"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={formData.job_role.eligibility}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, job_role: { ...prev.job_role, eligibility: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  label="Compensation"
+                  fullWidth
+                  value={formData.job_role.compensation}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, job_role: { ...prev.job_role, compensation: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  label="Bonuses"
+                  fullWidth
+                  value={formData.job_role.bonuses}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, job_role: { ...prev.job_role, bonuses: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+              </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">Selection Process</h3>
-              <TextField
-                label="Steps (one per line)"
-                fullWidth
-                multiline
-                rows={4}
-                value={formData.selection_process.steps}
-                onChange={(e) => setFormData((prev) => ({ ...prev, selection_process: { steps: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-            </div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">Internship</h3>
+                <TextField
+                  label="Duration"
+                  fullWidth
+                  value={formData.internship.duration}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, internship: { ...prev.internship, duration: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  label="Schedule"
+                  fullWidth
+                  value={formData.internship.schedule}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, internship: { ...prev.internship, schedule: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  label="Stipend"
+                  fullWidth
+                  value={formData.internship.stipend}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, internship: { ...prev.internship, stipend: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+              </div>
 
-            <div className="bg-[#f5f3ff] border border-[#ede9fe] rounded-lg p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">Location</h3>
-              <TextField
-                label="City"
-                fullWidth
-                value={formData.location.city}
-                onChange={(e) => setFormData((prev) => ({ ...prev, location: { ...prev.location, city: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-              <TextField
-                label="Address"
-                fullWidth
-                multiline
-                rows={3}
-                value={formData.location.address}
-                onChange={(e) => setFormData((prev) => ({ ...prev, location: { ...prev.location, address: e.target.value } }))}
-                variant="outlined"
-                size="small"
-              />
-            </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">Selection Process</h3>
+                <TextField
+                  label="Steps (one per line)"
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={formData.selection_process.steps}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, selection_process: { steps: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+              </div>
 
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">Overall Details</h3>
-              <TextField
-                label="Overall Description"
-                name="overall_description"
-                multiline
-                rows={4}
-                fullWidth
-                value={formData.overall_description}
-                onChange={(e) => setFormData((prev) => ({ ...prev, overall_description: e.target.value }))}
-                variant="outlined"
-                size="small"
-              />
-            </div>
-          </form>
+              <div className="bg-[#f5f3ff] border border-[#ede9fe] rounded-lg p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">Location</h3>
+                <TextField
+                  label="City"
+                  fullWidth
+                  value={formData.location.city}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, location: { ...prev.location, city: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+                <TextField
+                  label="Address"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={formData.location.address}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, location: { ...prev.location, address: e.target.value } }))}
+                  variant="outlined"
+                  size="small"
+                />
+              </div>
+
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3">Overall Details</h3>
+                <TextField
+                  label="Overall Description"
+                  name="overall_description"
+                  multiline
+                  rows={4}
+                  fullWidth
+                  value={formData.overall_description}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, overall_description: e.target.value }))}
+                  variant="outlined"
+                  size="small"
+                />
+              </div>
+            </form>
           )}
         </DialogContent>
         <DialogActions className="p-4 border-t border-slate-200">
@@ -538,6 +711,10 @@ const CompanyManagement = () => {
                     <p className="text-slate-900">{selectedCompany?.name || 'N/A'}</p>
                   </div>
                   <div>
+                    <label className="text-sm font-medium text-slate-500">Batch</label>
+                    <p className="text-slate-900">{formatBatchLabel(selectedCompany?.batch || selectedBatch)}</p>
+                  </div>
+                  <div>
                     <label className="text-sm font-medium text-slate-500">Website</label>
                     <p className="text-slate-900">{selectedCompany?.website || 'N/A'}</p>
                   </div>
@@ -545,7 +722,7 @@ const CompanyManagement = () => {
                     <label className="text-sm font-medium text-slate-500">Parent Org</label>
                     <p className="text-slate-900">{selectedCompany?.parent_org || 'N/A'}</p>
                   </div>
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="text-sm font-medium text-slate-500">Description</label>
                     <p className="text-slate-900 whitespace-pre-wrap">{selectedCompany?.description || 'N/A'}</p>
                   </div>
@@ -596,8 +773,8 @@ const CompanyManagement = () => {
                 <h3 className="text-lg font-semibold text-slate-900 mb-3">Selection Process</h3>
                 {selectedCompany?.selection_process?.steps?.length > 0 ? (
                   <ol className="list-decimal ml-5 text-slate-800 space-y-1">
-                    {selectedCompany.selection_process.steps.map((step, idx) => (
-                      <li key={`${selectedCompany.id}-step-${idx}`} className="text-sm">{step}</li>
+                    {selectedCompany.selection_process.steps.map((step, index) => (
+                      <li key={`${selectedCompany.id}-step-${index}`} className="text-sm">{step}</li>
                     ))}
                   </ol>
                 ) : (
@@ -637,6 +814,3 @@ const CompanyManagement = () => {
 };
 
 export default CompanyManagement;
-
-
-

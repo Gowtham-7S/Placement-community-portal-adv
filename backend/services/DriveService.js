@@ -16,6 +16,14 @@ const normalizeRounds = (rounds = []) => {
   }));
 };
 
+const getMeaningfulRounds = (rounds = []) => {
+  return rounds.filter((round) => {
+    if (!round || typeof round !== 'object') return false;
+    return ['round_name', 'round_description', 'mode', 'expected_date']
+      .some((key) => String(round[key] || '').trim() !== '');
+  });
+};
+
 const deriveInterviewDate = (rounds = []) => {
   const dates = rounds
     .map((round) => new Date(round.expected_date))
@@ -57,6 +65,54 @@ const deriveDriveMode = (rounds = []) => {
  * Handles interview drive management operations
  */
 class DriveService {
+  static async getDriveBatches() {
+    try {
+      return await Drive.getBatchOptions();
+    } catch (error) {
+      throw new Error(`Get drive batches error: ${error.message}`);
+    }
+  }
+
+  static async createDriveBatch(batchValue) {
+    try {
+      const normalizedBatch = String(batchValue || '').trim();
+      if (!/^\d{4}-\d{4}$/.test(normalizedBatch)) {
+        throw new AppError(
+          'Batch is required in YYYY-YYYY format',
+          constants.HTTP_BAD_REQUEST,
+          'INVALID_BATCH'
+        );
+      }
+
+      const [startYear, endYear] = normalizedBatch.split('-').map(Number);
+      if (endYear - startYear !== 4) {
+        throw new AppError(
+          'Batch must span 4 years, like 2023-2027',
+          constants.HTTP_BAD_REQUEST,
+          'INVALID_BATCH'
+        );
+      }
+
+      const existingBatch = await Drive.findBatchByValue(normalizedBatch);
+      if (existingBatch?.is_active) {
+        throw new AppError(
+          'Batch already exists',
+          constants.HTTP_CONFLICT,
+          'BATCH_EXISTS'
+        );
+      }
+
+      if (existingBatch && !existingBatch.is_active) {
+        return await Drive.reactivateBatch(existingBatch.id);
+      }
+
+      return await Drive.createBatch(normalizedBatch);
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new Error(`Create drive batch error: ${error.message}`);
+    }
+  }
+
   /**
    * Get all drives with filtering
    */
@@ -103,36 +159,35 @@ class DriveService {
         );
       }
 
-      if (!driveData.role_name || !driveData.eligible_batches || !driveData.requirements
-        || driveData.ctc === undefined || driveData.total_positions === undefined) {
-        throw new AppError(
-          'Missing required drive fields',
-          constants.HTTP_BAD_REQUEST,
-          'DRIVE_FIELDS_REQUIRED'
-        );
-      }
-
-      const roundsInput = Array.isArray(driveData.rounds) ? driveData.rounds : [];
-      if (!roundsInput.length) {
-        throw new AppError(
-          'At least one round is required',
-          constants.HTTP_BAD_REQUEST,
-          'ROUNDS_REQUIRED'
-        );
-      }
-
+      const roundsInput = getMeaningfulRounds(Array.isArray(driveData.rounds) ? driveData.rounds : []);
       const rounds = normalizeRounds(roundsInput);
-      const interviewDate = deriveInterviewDate(rounds);
+
+      const hasInvalidRound = rounds.some((round) => !round.round_name || !round.expected_date);
+      if (hasInvalidRound) {
+        throw new AppError(
+          'Each round must include a name and expected date',
+          constants.HTTP_BAD_REQUEST,
+          'INVALID_ROUNDS'
+        );
+      }
+
+      const interviewDate = driveData.interview_date || deriveInterviewDate(rounds);
       if (!interviewDate) {
         throw new AppError(
-          'Each round must have a valid expected date',
+          'Provide a tentative drive date or at least one round date',
           constants.HTTP_BAD_REQUEST,
-          'INVALID_ROUND_DATE'
+          'DRIVE_DATE_REQUIRED'
         );
       }
 
       const drivePayload = {
         ...driveData,
+        role_name: String(driveData.role_name || '').trim() || 'General Drive',
+        requirements: String(driveData.requirements || '').trim() || null,
+        batch: String(driveData.eligible_batches || driveData.batch || '').trim() || null,
+        eligible_batches: String(driveData.eligible_batches || driveData.batch || '').trim() || null,
+        location: String(driveData.location || '').trim() || null,
+        registration_deadline: driveData.registration_deadline || null,
         round_count: rounds.length,
         interview_date: interviewDate,
         drive_status: deriveDriveStatus(rounds),
@@ -163,35 +218,61 @@ class DriveService {
    */
   static async updateDrive(id, updates) {
     try {
+      const currentDrive = await Drive.findById(id);
+      if (!currentDrive) {
+        throw new AppError(
+          constants.ERROR_NOT_FOUND,
+          constants.HTTP_NOT_FOUND,
+          'DRIVE_NOT_FOUND'
+        );
+      }
+
       const roundsInput = Array.isArray(updates.rounds) ? updates.rounds : null;
       if (roundsInput) {
-        if (!updates.role_name || !updates.eligible_batches || !updates.requirements
-          || updates.ctc === undefined || updates.total_positions === undefined) {
+        const meaningfulRounds = getMeaningfulRounds(roundsInput);
+        const rounds = normalizeRounds(meaningfulRounds);
+        const hasInvalidRound = rounds.some((round) => !round.round_name || !round.expected_date);
+        if (hasInvalidRound) {
           throw new AppError(
-            'Missing required drive fields',
+            'Each round must include a name and expected date',
             constants.HTTP_BAD_REQUEST,
-            'DRIVE_FIELDS_REQUIRED'
+            'INVALID_ROUNDS'
           );
         }
-        if (!roundsInput.length) {
-          throw new AppError(
-            'At least one round is required',
-            constants.HTTP_BAD_REQUEST,
-            'ROUNDS_REQUIRED'
-          );
-        }
-        const rounds = normalizeRounds(roundsInput);
-        const interviewDate = deriveInterviewDate(rounds);
+
+        const interviewDate = updates.interview_date
+          || deriveInterviewDate(rounds)
+          || currentDrive.interview_date;
         if (!interviewDate) {
           throw new AppError(
-            'Each round must have a valid expected date',
+            'Provide a tentative drive date or at least one round date',
             constants.HTTP_BAD_REQUEST,
-            'INVALID_ROUND_DATE'
+            'DRIVE_DATE_REQUIRED'
           );
         }
 
         const updatePayload = {
           ...updates,
+          role_name: String(updates.role_name || currentDrive.role_name || '').trim() || 'General Drive',
+          requirements: Object.prototype.hasOwnProperty.call(updates, 'requirements')
+            ? (String(updates.requirements || '').trim() || null)
+            : currentDrive.requirements,
+          batch: Object.prototype.hasOwnProperty.call(updates, 'eligible_batches')
+            ? (String(updates.eligible_batches || '').trim() || null)
+            : (Object.prototype.hasOwnProperty.call(updates, 'batch')
+              ? (String(updates.batch || '').trim() || null)
+              : (currentDrive.batch || currentDrive.eligible_batches || null)),
+          eligible_batches: Object.prototype.hasOwnProperty.call(updates, 'eligible_batches')
+            ? (String(updates.eligible_batches || '').trim() || null)
+            : (Object.prototype.hasOwnProperty.call(updates, 'batch')
+              ? (String(updates.batch || '').trim() || null)
+              : currentDrive.eligible_batches),
+          location: Object.prototype.hasOwnProperty.call(updates, 'location')
+            ? (String(updates.location || '').trim() || null)
+            : currentDrive.location,
+          registration_deadline: Object.prototype.hasOwnProperty.call(updates, 'registration_deadline')
+            ? (updates.registration_deadline || null)
+            : currentDrive.registration_deadline,
           round_count: rounds.length,
           interview_date: interviewDate,
           drive_status: deriveDriveStatus(rounds),
@@ -221,7 +302,17 @@ class DriveService {
         }
       }
 
-      const drive = await Drive.update(id, updates);
+      const nextBatch = Object.prototype.hasOwnProperty.call(updates, 'eligible_batches')
+        ? (String(updates.eligible_batches || '').trim() || null)
+        : (Object.prototype.hasOwnProperty.call(updates, 'batch')
+          ? (String(updates.batch || '').trim() || null)
+          : (currentDrive.batch || currentDrive.eligible_batches || null));
+
+      const drive = await Drive.update(id, {
+        ...updates,
+        batch: nextBatch,
+        eligible_batches: nextBatch,
+      });
       if (!drive) {
         throw new AppError(
           constants.ERROR_NOT_FOUND,

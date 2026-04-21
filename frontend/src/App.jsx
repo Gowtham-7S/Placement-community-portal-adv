@@ -23,6 +23,14 @@ function App() {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/companies" element={<AdminDashboard />} />
+              <Route path="/admin/companies/:batch" element={<AdminDashboard />} />
+              <Route path="/admin/drives" element={<AdminDashboard />} />
+              <Route path="/admin/drives/:batch" element={<AdminDashboard />} />
+              <Route path="/admin/experiences" element={<AdminDashboard />} />
+              <Route path="/admin/approvals" element={<AdminDashboard />} />
+              <Route path="/admin/analytics" element={<AdminDashboard />} />
+              <Route path="/admin/experience-access" element={<AdminDashboard />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={['student']} />}>

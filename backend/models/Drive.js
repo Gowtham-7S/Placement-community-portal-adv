@@ -4,12 +4,81 @@ const { pool } = require('../config/database');
  * Drive Model
  */
 class Drive {
+  static async findBatchByValue(batch) {
+    try {
+      const result = await pool.query(
+        'SELECT id, batch, is_active, created_at, updated_at FROM drive_batches WHERE batch = $1',
+        [batch]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      throw new Error(`Error finding drive batch: ${error.message}`);
+    }
+  }
+
+  static async createBatch(batch) {
+    try {
+      const result = await pool.query(
+        `INSERT INTO drive_batches (batch, is_active, created_at, updated_at)
+         VALUES ($1, TRUE, NOW(), NOW())
+         RETURNING id, batch, is_active, created_at, updated_at`,
+        [batch]
+      );
+      return result.rows[0];
+    } catch (error) {
+      throw new Error(`Error creating drive batch: ${error.message}`);
+    }
+  }
+
+  static async reactivateBatch(id) {
+    try {
+      const result = await pool.query(
+        `UPDATE drive_batches
+         SET is_active = TRUE, updated_at = NOW()
+         WHERE id = $1
+         RETURNING id, batch, is_active, created_at, updated_at`,
+        [id]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      throw new Error(`Error reactivating drive batch: ${error.message}`);
+    }
+  }
+
+  static async getBatchOptions() {
+    try {
+      const query = `
+        SELECT
+          db.id,
+          db.batch,
+          db.is_active,
+          COUNT(d.id)::int AS drive_count
+        FROM drive_batches db
+        LEFT JOIN drives d
+          ON TRIM(COALESCE(d.batch, d.eligible_batches, '')) = db.batch
+        WHERE db.is_active = TRUE
+        GROUP BY db.id, db.batch, db.is_active
+        ORDER BY db.batch ASC
+      `;
+
+      const result = await pool.query(query);
+      return result.rows.map((row) => ({
+        id: row.id,
+        batch: row.batch,
+        is_active: row.is_active,
+        drive_count: Number(row.drive_count || 0),
+      }));
+    } catch (error) {
+      throw new Error(`Error fetching drive batches: ${error.message}`);
+    }
+  }
+
   static async findById(id) {
     try {
       const query = `
         SELECT d.id, d.company_id, c.name as company_name, d.role_name, d.ctc,
                d.interview_date, d.registration_deadline, d.total_positions, d.filled_positions,
-               d.round_count, d.drive_status, d.requirements, d.eligible_batches, d.location,
+               d.round_count, d.drive_status, d.requirements, d.batch, d.eligible_batches, d.location,
                d.mode, d.created_at,
                CASE
                  WHEN d.drive_status = 'cancelled' THEN 'cancelled'
@@ -54,21 +123,21 @@ class Drive {
     try {
       const {
         company_id, role_name, ctc, interview_date, registration_deadline,
-        total_positions, round_count, requirements, eligible_batches, location, mode, drive_status
+        total_positions, round_count, requirements, batch, eligible_batches, location, mode, drive_status
       } = driveData;
 
       const query = `
         INSERT INTO drives (company_id, role_name, ctc, interview_date, 
                           registration_deadline, total_positions, round_count, 
-                          requirements, eligible_batches, location, mode, drive_status, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
-        RETURNING id, company_id, role_name, interview_date, drive_status
+                          requirements, batch, eligible_batches, location, mode, drive_status, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+        RETURNING id, company_id, role_name, batch, interview_date, drive_status
       `;
 
       const result = await client.query(query, [
         company_id, role_name, ctc || null, interview_date,
         registration_deadline || null, total_positions || null, round_count || null,
-        requirements || null, eligible_batches || null, location || null, mode || 'online',
+        requirements || null, batch, eligible_batches || null, location || null, mode || 'online',
         drive_status || 'upcoming'
       ]);
 
@@ -129,6 +198,7 @@ class Drive {
         'filled_positions',
         'total_positions',
         'requirements',
+        'batch',
         'eligible_batches',
         'registration_deadline',
         'interview_date',
@@ -179,10 +249,12 @@ class Drive {
           ELSE 'ongoing'
         END
       `;
+      const scheduleStartExpr = `COALESCE(MIN(dr.expected_date), d.interview_date)`;
+      const scheduleEndExpr = `COALESCE(MAX(dr.expected_date), d.interview_date)`;
 
       let query = `
         SELECT d.id, d.company_id, c.name as company_name, d.role_name, d.ctc,
-               d.interview_date, d.drive_status, d.filled_positions, d.total_positions, d.created_at,
+               d.interview_date, d.drive_status, d.filled_positions, d.total_positions, d.mode, d.created_at,
                ${statusCase} AS computed_status
         FROM drives d
         JOIN companies c ON d.company_id = c.id
@@ -195,18 +267,6 @@ class Drive {
       if (filters.company_id) {
         query += ` AND d.company_id = $${paramIndex}`;
         values.push(filters.company_id);
-        paramIndex++;
-      }
-
-      if (filters.date_from) {
-        query += ` AND d.interview_date >= $${paramIndex}`;
-        values.push(filters.date_from);
-        paramIndex++;
-      }
-
-      if (filters.date_to) {
-        query += ` AND d.interview_date <= $${paramIndex}`;
-        values.push(filters.date_to);
         paramIndex++;
       }
 
@@ -223,17 +283,35 @@ class Drive {
       }
 
       if (filters.batch) {
-        query += ` AND d.eligible_batches ILIKE $${paramIndex}`;
-        values.push(`%${filters.batch}%`);
+        query += ` AND TRIM(COALESCE(d.batch, d.eligible_batches, '')) = $${paramIndex}`;
+        values.push(filters.batch);
         paramIndex++;
       }
 
       query += ` GROUP BY d.id, c.name`;
 
+      const havingClauses = [];
+
+      if (filters.date_from) {
+        havingClauses.push(`${scheduleEndExpr} >= $${paramIndex}`);
+        values.push(filters.date_from);
+        paramIndex++;
+      }
+
+      if (filters.date_to) {
+        havingClauses.push(`${scheduleStartExpr} <= $${paramIndex}`);
+        values.push(filters.date_to);
+        paramIndex++;
+      }
+
       if (filters.status) {
-        query += ` HAVING ${statusCase} = $${paramIndex}`;
+        havingClauses.push(`${statusCase} = $${paramIndex}`);
         values.push(filters.status);
         paramIndex++;
+      }
+
+      if (havingClauses.length > 0) {
+        query += ` HAVING ${havingClauses.join(' AND ')}`;
       }
 
       query += ` ORDER BY d.interview_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
@@ -257,18 +335,6 @@ class Drive {
         countParamIndex++;
       }
 
-      if (filters.date_from) {
-        countQuery += ` AND d.interview_date >= $${countParamIndex}`;
-        countValues.push(filters.date_from);
-        countParamIndex++;
-      }
-
-      if (filters.date_to) {
-        countQuery += ` AND d.interview_date <= $${countParamIndex}`;
-        countValues.push(filters.date_to);
-        countParamIndex++;
-      }
-
       if (filters.ctc_min) {
         countQuery += ` AND d.ctc >= $${countParamIndex}`;
         countValues.push(filters.ctc_min);
@@ -282,17 +348,35 @@ class Drive {
       }
 
       if (filters.batch) {
-        countQuery += ` AND d.eligible_batches ILIKE $${countParamIndex}`;
-        countValues.push(`%${filters.batch}%`);
+        countQuery += ` AND TRIM(COALESCE(d.batch, d.eligible_batches, '')) = $${countParamIndex}`;
+        countValues.push(filters.batch);
         countParamIndex++;
       }
 
       countQuery += ` GROUP BY d.id`;
 
+      const countHavingClauses = [];
+
+      if (filters.date_from) {
+        countHavingClauses.push(`${scheduleEndExpr} >= $${countParamIndex}`);
+        countValues.push(filters.date_from);
+        countParamIndex++;
+      }
+
+      if (filters.date_to) {
+        countHavingClauses.push(`${scheduleStartExpr} <= $${countParamIndex}`);
+        countValues.push(filters.date_to);
+        countParamIndex++;
+      }
+
       if (filters.status) {
-        countQuery += ` HAVING ${statusCase} = $${countParamIndex}`;
+        countHavingClauses.push(`${statusCase} = $${countParamIndex}`);
         countValues.push(filters.status);
         countParamIndex++;
+      }
+
+      if (countHavingClauses.length > 0) {
+        countQuery += ` HAVING ${countHavingClauses.join(' AND ')}`;
       }
 
       countQuery += `) AS derived`;

@@ -5,6 +5,21 @@ const { getPaginationParams, formatPaginatedResponse } = require('../utils/query
 
 class JuniorController {
     /**
+     * GET /api/junior/drives/batches
+     */
+    static async getDriveBatches(req, res, next) {
+        try {
+            const batches = await DriveService.getDriveBatches();
+            res.status(constants.HTTP_OK).json({
+                success: true,
+                data: batches,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
      * Get company-level insights (aggregated experiences)
      * GET /api/junior/companies
      */

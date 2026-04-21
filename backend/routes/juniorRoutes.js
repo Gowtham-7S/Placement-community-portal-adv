@@ -31,6 +31,9 @@ router.get('/topics', JuniorController.getTrendingTopics);
 
 // ========== DRIVES (READ-ONLY) ==========
 
+// Get drive batches
+router.get('/drives/batches', JuniorController.getDriveBatches);
+
 // Get drives list
 router.get('/drives', JuniorController.getDrives);
 

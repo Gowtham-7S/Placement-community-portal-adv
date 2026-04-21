@@ -49,7 +49,8 @@ FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 -- ============================================================================
 CREATE TABLE companies (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  batch VARCHAR(9) NOT NULL,
   description TEXT,
   website VARCHAR(255) CHECK (website ~* '^https?://'),
   parent_org VARCHAR(255),
@@ -65,11 +66,35 @@ CREATE TABLE companies (
 );
 
 CREATE INDEX idx_companies_name ON companies(name);
+CREATE INDEX idx_companies_batch ON companies(batch);
 CREATE INDEX idx_companies_industry ON companies(industry);
+ALTER TABLE companies ADD CONSTRAINT companies_name_batch_unique UNIQUE (name, batch);
 
 CREATE TRIGGER trg_companies_update
 BEFORE UPDATE ON companies
 FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- ============================================================================
+-- 2AA. COMPANY BATCHES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS company_batches (
+  id SERIAL PRIMARY KEY,
+  batch VARCHAR(9) UNIQUE NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_company_batches_batch ON company_batches(batch);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_company_batches_update') THEN
+    CREATE TRIGGER trg_company_batches_update
+    BEFORE UPDATE ON company_batches
+    FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+  END IF;
+END $$;
 
 -- ============================================================================
 -- 2A. COMPANY JOB ROLE TABLE
@@ -144,6 +169,7 @@ CREATE TABLE drives (
   id SERIAL PRIMARY KEY,
   company_id INT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   role_name VARCHAR(100) NOT NULL,
+  batch VARCHAR(9) NOT NULL,
   role_description TEXT,
   ctc DECIMAL(10,2),
   currency VARCHAR(10) DEFAULT 'INR',
@@ -170,6 +196,35 @@ CREATE INDEX idx_drives_drive_status ON drives(drive_status);
 CREATE TRIGGER trg_drives_update
 BEFORE UPDATE ON drives
 FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- ============================================================================
+-- 3AA. DRIVE BATCHES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS drive_batches (
+  id SERIAL PRIMARY KEY,
+  batch VARCHAR(9) UNIQUE NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_drive_batches_batch ON drive_batches(batch);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_drive_batches_update') THEN
+    CREATE TRIGGER trg_drive_batches_update
+    BEFORE UPDATE ON drive_batches
+    FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+  END IF;
+END $$;
+
+INSERT INTO drive_batches (batch)
+SELECT DISTINCT COALESCE(batch, eligible_batches)
+FROM drives
+WHERE COALESCE(batch, eligible_batches) IS NOT NULL
+  AND COALESCE(batch, eligible_batches) ~ '^\d{4}-\d{4}$'
+ON CONFLICT (batch) DO NOTHING;
 
 -- ============================================================================
 -- 3A. DRIVE ROUNDS TABLE

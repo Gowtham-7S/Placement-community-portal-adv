@@ -7,6 +7,41 @@ const { getPaginationParams, formatPaginatedResponse } = require('../utils/query
  */
 class DriveController {
   /**
+   * Get dynamic drive batches
+   * GET /api/admin/drives/batches
+   */
+  static async getDriveBatches(req, res, next) {
+    try {
+      const batches = await DriveService.getDriveBatches();
+
+      res.status(constants.HTTP_OK).json({
+        success: true,
+        data: batches,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Create a drive batch
+   * POST /api/admin/drives/batches
+   */
+  static async createDriveBatch(req, res, next) {
+    try {
+      const batch = await DriveService.createDriveBatch(req.body.batch);
+
+      res.status(constants.HTTP_CREATED).json({
+        success: true,
+        message: constants.SUCCESS_DATA_CREATED,
+        data: batch,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get all drives
    * GET /api/admin/drives
    */

@@ -8,8 +8,14 @@ class AnalyticsService {
         try {
             const statsQuery = `
         SELECT
-          (SELECT COUNT(*) FROM companies) as total_companies,
-          (SELECT COUNT(*) FROM drives) as total_drives,
+          (SELECT COUNT(*) FROM companies WHERE is_active = TRUE) as total_companies,
+          (
+            SELECT COUNT(*)
+            FROM drives d
+            JOIN drive_batches db
+              ON TRIM(COALESCE(d.batch, d.eligible_batches, '')) = db.batch
+            WHERE db.is_active = TRUE
+          ) as total_drives,
           (SELECT COUNT(*) FROM experiences) as total_experiences,
           (SELECT COUNT(*) FROM experiences WHERE result = 'pass') as total_selections,
           (SELECT AVG(ctc_offered) FROM experiences WHERE ctc_offered IS NOT NULL) as avg_ctc

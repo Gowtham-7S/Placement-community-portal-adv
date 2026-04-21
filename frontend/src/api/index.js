@@ -12,6 +12,8 @@ export const authAPI = {
 // Company APIs
 export const companyAPI = {
   getAll: (params) => axiosInstance.get('/admin/companies', { params }),
+  getBatches: () => axiosInstance.get('/admin/companies/batches'),
+  createBatch: (data) => axiosInstance.post('/admin/companies/batches', data),
   getById: (id) => axiosInstance.get(`/admin/companies/${id}`),
   create: (data) => axiosInstance.post('/admin/companies', data),
   update: (id, data) => axiosInstance.put(`/admin/companies/${id}`, data),
@@ -23,6 +25,8 @@ export const companyAPI = {
 // Drive APIs
 export const driveAPI = {
   getAll: (params) => axiosInstance.get('/admin/drives', { params }),
+  getBatches: () => axiosInstance.get('/admin/drives/batches'),
+  createBatch: (data) => axiosInstance.post('/admin/drives/batches', data),
   getById: (id) => axiosInstance.get(`/admin/drives/${id}`),
   create: (data) => axiosInstance.post('/admin/drives', data),
   update: (id, data) => axiosInstance.put(`/admin/drives/${id}`, data),
@@ -69,6 +73,7 @@ export const juniorAPI = {
   getCompanyExperiences: (name, params) => axiosInstance.get(`/junior/companies/${encodeURIComponent(name)}/experiences`, { params }),
   getStats: () => axiosInstance.get('/junior/stats'),
   getTrendingTopics: (limit) => axiosInstance.get('/junior/topics', { params: { limit } }),
+  getDriveBatches: () => axiosInstance.get('/junior/drives/batches'),
   getDrives: (params) => axiosInstance.get('/junior/drives', { params }),
   getDriveById: (id) => axiosInstance.get(`/junior/drives/${id}`),
 };

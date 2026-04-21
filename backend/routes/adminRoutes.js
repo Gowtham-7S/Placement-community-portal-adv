@@ -24,6 +24,17 @@ router.use(roleMiddleware('admin'));
 // Get all companies
 router.get('/companies', CompanyController.getAllCompanies);
 
+// Get company batches
+router.get('/companies/batches', CompanyController.getCompanyBatches);
+
+// Create company batch
+router.post(
+  '/companies/batches',
+  validators.companyBatchValidation,
+  handleValidationErrors,
+  CompanyController.createCompanyBatch
+);
+
 // Get company by ID
 router.get('/companies/:id', validators.idParam, handleValidationErrors, CompanyController.getCompany);
 
@@ -50,6 +61,17 @@ router.delete('/companies/:id', validators.idParam, handleValidationErrors, Comp
 
 // Get all drives
 router.get('/drives', DriveController.getAllDrives);
+
+// Get drive batches
+router.get('/drives/batches', DriveController.getDriveBatches);
+
+// Create drive batch
+router.post(
+  '/drives/batches',
+  validators.companyBatchValidation,
+  handleValidationErrors,
+  DriveController.createDriveBatch
+);
 
 // Get drive by ID
 router.get('/drives/:id', validators.idParam, handleValidationErrors, DriveController.getDrive);
